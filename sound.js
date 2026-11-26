@@ -1,39 +1,62 @@
 'use strict';
 const soundtrack = (() => {
   let audio, nextBeat=0, beat=0, lastFish=-2, streak=0;
-  const chords=[[196,246.94,293.66,369.99],[164.81,196,246.94,293.66],[130.81,196,261.63,329.63],[146.83,220,293.66,369.99]];
+  const voices=new Set();
+  const halfBeat=.31;
+  const chords=[[55,59,62],[52,55,59],[48,52,55],[50,54,57]];
+  const melody=[
+    [71,0,69,67,0,0,69,0], [71,0,74,0,71,0,67,0],
+    [69,0,67,64,0,0,67,0], [69,0,66,0,62,0,66,69]
+  ];
+  const hz=midi=>440*2**((midi-69)/12);
   function unlock(){
     if(!profile.music&&!profile.effects)return;
     try {
       const Engine=window.AudioContext||window.webkitAudioContext;
-      if(!audio&&Engine) audio=new Engine();
-      if(audio && audio.state!=='running') audio.resume().catch(()=>{});
+      if(!audio&&Engine)audio=new Engine();
+      if(audio&&audio.state!=='running')audio.resume().catch(()=>{});
     } catch {}
   }
-  function note(freq,start,length,level,wave){
-    const tone=audio.createOscillator(),gain=audio.createGain();
-    tone.type=wave;tone.frequency.value=freq;
-    gain.gain.setValueAtTime(.0001,start);gain.gain.exponentialRampToValueAtTime(level,start+.013);
-    gain.gain.exponentialRampToValueAtTime(.0001,start+length);
-    tone.connect(gain);gain.connect(audio.destination);tone.start(start);tone.stop(start+length+.02);
-    tone.onended=()=>{tone.disconnect();gain.disconnect();};
+  function note(freq,start,duration,level,wave,attack=.035,release=.12){
+    const voice=audio.createOscillator(),gain=audio.createGain();
+    voice.type=wave;voice.frequency.value=freq;
+    gain.gain.setValueAtTime(.0001,start);
+    gain.gain.exponentialRampToValueAtTime(level,start+attack);
+    gain.gain.exponentialRampToValueAtTime(level*.78,start+duration-release);
+    gain.gain.exponentialRampToValueAtTime(.0001,start+duration);
+    voice.connect(gain);gain.connect(audio.destination);voices.add(voice);
+    voice.onended=()=>{voice.disconnect();gain.disconnect();voices.delete(voice);};
+    voice.start(start);voice.stop(start+duration+.01);
+  }
+  function silence(){
+    for(const voice of voices)voice.stop();
+    voices.clear();nextBeat=0;beat-=beat%8;
   }
   return {
-    start(){unlock();beat=0;nextBeat=0;lastFish=-2;},
+    unlock,silence,
+    start(){unlock();silence();beat=0;lastFish=-2;},
     update(){
       if(!audio||audio.state!=='running'||!profile.music||document.hidden)return;
       const now=audio.currentTime;
-      if(nextBeat>now+.05)return;
-      const when=Math.max(now,nextBeat), chord=chords[Math.floor(beat/8)%4];
-      note(chord[[0,2,1,3,0,1,2,1][beat%8]],when,.62,.043,'triangle');
-      nextBeat=when+.42;beat++;
+      nextBeat=Math.max(now,nextBeat);
+      while(nextBeat<now+.19){
+        const bar=Math.floor(beat/8)%4, step=beat%8, phrase=melody[bar];
+        if(step===0)for(const pitch of chords[bar])note(hz(pitch),nextBeat,8*halfBeat+.22,.017,'sine',.17,.32);
+        if(phrase[step]){
+          let length=1;
+          while(step+length<8&&!phrase[step+length])length++;
+          note(hz(phrase[step]),nextBeat,length*halfBeat+.075,.032,'triangle',.038,.13);
+        }
+        if(step===0||step===4)note(hz(chords[bar][step===0?0:2]-12),nextBeat,.86,.035,'sine',.06,.22);
+        nextBeat+=halfBeat;beat++;
+      }
     },
     fish(){
       if(!audio||audio.state!=='running'||!profile.effects)return;
       const now=audio.currentTime;
       streak=now-lastFish<.6?Math.min(2,streak+1):0;lastFish=now;
       const pitch=[659.25,783.99,987.77][streak];
-      note(pitch,now,.20,.085,'sine');note(pitch*2,now,.11,.016,'sine');
+      note(pitch,now,.2,.075,'sine',.01,.14);note(pitch*2,now,.11,.014,'sine',.008,.08);
     }
   };
 })();
