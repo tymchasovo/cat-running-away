@@ -9,6 +9,14 @@ el('best').textContent = best;
 let mode = 'menu', distance = 0, fish = 0, lane = 0, x = 0, air = 0;
 let elapsed = 0, nextRow = 0, objects = [], last = 0, pointer = null;
 let W, H;
+let introTime = 0, playedIntro = false, lesson = '';
+const firstCrate = 28, firstStall = 58, introDuration = 1.55;
+function addCrate(at, lane) {
+  objects.push({at, lane, type:'crate'});
+  for (const offset of [-1.5, 0, 1.5]) {
+    objects.push({at:at+offset, lane, type:'fish', rise:offset === 0 ? 58 : 38});
+  }
+}
 function resize() {
   W = canvas.clientWidth; H = canvas.clientHeight;
   const ratio = Math.min(devicePixelRatio || 1, 2);
@@ -16,10 +24,13 @@ function resize() {
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
 }
 function start() {
-  mode = 'run'; distance = fish = lane = x = air = elapsed = 0;
-  objects = [{at:28,lane:0,type:'crate'}, {at:28,lane:0,type:'fish',high:true},
-             {at:58,lane:0,type:'stall'}];
-  nextRow = 78; panel.hidden = true; hint.hidden = false; el('score').textContent = '0';
+  mode = playedIntro || window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'run' : 'intro';
+  playedIntro = true; introTime = 0; pointer = null;
+  distance = fish = lane = x = air = elapsed = 0;
+  lesson = 'jump'; objects = [];
+  addCrate(firstCrate, 0);
+  objects.push({at:firstStall, lane:0, type:'stall'});
+  nextRow = 78; panel.hidden = true; hint.hidden = true; el('score').textContent = '0';
   last = performance.now();
 }
 function action(dir) {
@@ -59,15 +70,34 @@ function finish() {
   el('start').textContent='Ещё раз →';
 }
 function tick(dt) {
-  elapsed+=dt; distance+=Math.min(17,8+elapsed*.11)*dt;
+  const speed = Math.min(17,8+elapsed*.11);
+  let advance = speed*dt;
+  if (lesson) {
+    const jumping = lesson === 'jump';
+    const cue = jumping ? firstCrate-3.6 : firstStall-4;
+    if (distance+advance >= cue) {
+      if (lane !== 0 || (jumping && air >= .60)) {
+        lesson = jumping ? 'dodge' : '';
+        hint.hidden = true;
+      } else {
+        advance = Math.max(0, cue-distance);
+        hint.textContent = jumping ? '↑  Смахни вверх' : '↔  Смахни в сторону';
+        hint.hidden = false;
+      }
+    }
+  }
+  elapsed += advance/speed; distance += advance;
   x += Math.sign(lane-x)*Math.min(Math.abs(lane-x),dt*7);
   air=Math.max(0,air-dt);
   while(nextRow < distance+90) {
     const blocked=Math.floor(Math.random()*3)-1;
     const open=(blocked+2)%3-1;
     const type=Math.random()<.55?'crate':'stall';
-    objects.push({at:nextRow,lane:blocked,type});
-    objects.push({at:nextRow,lane:type==='crate'?blocked:open,type:'fish',high:type==='crate'});
+    if(type==='crate') addCrate(nextRow,blocked);
+    else {
+      objects.push({at:nextRow,lane:blocked,type});
+      objects.push({at:nextRow,lane:open,type:'fish'});
+    }
     if(nextRow>185 && Math.random()<.65) objects.push({at:nextRow,lane:-blocked-open,type:'stall'});
     nextRow+=nextRow<185?24:17+Math.random()*7;
   }
@@ -75,15 +105,12 @@ function tick(dt) {
     if(o.done || o.at>distance) continue;
     o.done=true;
     if(Math.abs(o.lane-x)>.48) continue;
-    if(o.type==='fish') {if(o.high?height()>.35:height()<.65) fish++;}
+    if(o.type==='fish') {if(o.rise?height()>.35:height()<.65) fish++;}
     else if(o.type==='stall'||height()<.35) {finish();break;}
   }
   objects=objects.filter(o=>o.at>distance-6 && !(o.type==='fish' && o.done));
   el('score').textContent=points();
-  if(mode==='run'){
-    hint.hidden=distance>58;
-    hint.textContent=distance<28?'↑  Смахни вверх':'↔  Смахни в сторону';
-  }
+
 }
 // All scenery is drawn in world order, from the far market gate to the cat.
 function rect(x,y,w,h,color){ctx.fillStyle=color;ctx.fillRect(x,y,w,h);}
@@ -117,6 +144,31 @@ function cat(cx,cy,s,time){
   ctx.lineCap='round';ctx.beginPath();ctx.moveTo(1,-10);ctx.quadraticCurveTo(16,-4,20+beat*3,-21);
   ctx.strokeStyle='#87432b';ctx.lineWidth=8;ctx.stroke();ctx.strokeStyle='#f4a458';ctx.lineWidth=5;ctx.stroke();ctx.restore();
 }
+function drawFish(x,y){
+  poly([[x-10,y],[x-18,y-7],[x-18,y+7]],'#245963');
+  oval(x,y,12,7,'#42aaa9');oval(x+5,y-2,1.7,1.7,'#173e44');
+}
+function drawTheft(){
+  const t = introTime;
+  const approach = Math.min(1,t/.50);
+  const escape = Math.min(1,Math.max(0,(t-.55)/.84));
+  const reach = Math.max(0,Math.sin(Math.PI*Math.min(1,Math.max(0,(t-.55)/.84))));
+  const cx = -42-53*approach + 95*escape;
+  const cy = -25*Math.sin(Math.PI*approach)-12*Math.sin(Math.PI*escape);
+  ctx.save();
+  ctx.translate(-145,0);booth('#c45b48');ctx.restore();
+  if(t<.50) drawFish(-113,-41);
+  oval(cx,0,22,6,'#a07c62');cat(cx,cy,1.55,t);
+  if(t>=.50 && escape<1) drawFish(cx-19,cy-39);
+  if(reach>0){
+    const palm=-158+62*reach;
+    rect(-209,-54,palm+200,16,'#345e67');
+    rect(palm-12,-54,8,17,'#fbdeb1');
+    rect(palm-4,-53,16,14,'#d98761');
+    rect(palm+9,-54,12,4,'#e8a078');
+    rect(palm+9,-47,9,4,'#e8a078');
+  }
+}
 function draw(time){
   const sky=ctx.createLinearGradient(0,0,0,H*.35);sky.addColorStop(0,'#9bd9d1');sky.addColorStop(1,'#ffdfab');
   rect(0,0,W,H,sky);oval(W*.74,H*.14,W*.07,W*.07,'#fff2b6');
@@ -135,7 +187,7 @@ function draw(time){
   }
   const items=[];
   for(let z=100-distance%12;z>-5;z-=12) for(const l of [-2.05,2.05])items.push({z,l,type:'side'});
-  for(const o of objects) if(o.at-distance<100 && o.at-distance>-4)items.push({z:o.at-distance,l:o.lane,type:o.type,high:o.high});
+  for(const o of objects) if(o.at-distance<100 && o.at-distance>-4)items.push({z:o.at-distance,l:o.lane,type:o.type,rise:o.rise});
   items.push({z:0,l:x,type:'cat'});
   items.sort((a,b)=>b.z-a.z);
   for(const obj of items){
@@ -145,7 +197,9 @@ function draw(time){
       rect(-27,-23,54,23,'#805039');rect(-24,-21,48,8,'#ce8b4f');rect(-24,-10,48,7,'#dc9b59');
       rect(-21,-23,5,23,'#a06640');rect(16,-23,5,23,'#a06640');
     } else if(obj.type==='fish'){
-      const y=obj.high?-44:-14;poly([[-12,y],[-20,y-7],[-20,y+7]],'#245963');oval(-2,y,12,7,'#42aaa9');oval(4,y-2,1.6,1.6,'#173e44');
+      drawFish(0,-(obj.rise || 14));
+    } else if(mode==='intro'){
+      drawTheft();
     } else {
       oval(0,0,22-height()*6,6,'#a07c62');cat(0,-height()*65,1.55,time);
     }
@@ -154,7 +208,10 @@ function draw(time){
 }
 function frame(now){
   const dt=Math.min(.05,Math.max(0,(now-last)/1000));last=now;
-  if(mode==='run')tick(dt);
+  if(mode==='intro') {
+    introTime += dt;
+    if(introTime >= introDuration) mode='run';
+  } else if(mode==='run')tick(dt);
   draw(mode==='run'?elapsed:mode==='menu'?now/1500:0);
   requestAnimationFrame(frame);
 }
