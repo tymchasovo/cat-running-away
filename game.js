@@ -57,7 +57,7 @@ function start() {
   distance = fish = lane = x = air = elapsed = 0;
   lesson = firstAttempt() ? 'jump' : ''; objects = [];
   bonusLeft=0; nextGold=lesson?110:30; el('bonus').hidden=true;
-  el('pause').hidden=false; el('start').classList.remove('welcome');
+  el('pause').hidden=false;
   if(lesson){
   addCrate(firstCrate, 0);
   objects.push({at:firstStall, lane:0, type:'stall'});
@@ -107,7 +107,7 @@ function finish() {
   el('best').textContent=best;
   panel.querySelector('h1').innerHTML='Забег<br><em>окончен</em>';
   el('detail').textContent=points()+' очк. · '+Math.floor(distance)+' м · 🐟 '+fish;
-  el('start').textContent='Ещё раз →';
+  el('start-label').textContent='Ещё раз';
   refreshMenu();
 }
 function tick(dt) {
@@ -199,6 +199,36 @@ function booth(color){
     poly([[left*.78,-89],[(left+10)*.78,-89],[left+10,-68],[left,-68]],i%2?'#ffde9c':color);
     rect(left,-68,10,7,i%2?'#f2ca87':color);
   }
+}
+function ropeCoil(){
+  oval(0,-3,30,5,'#896d68');
+  for(let layer=0;layer<3;layer++){
+    const y=-6-layer*4;
+    oval(-4,y,23-layer,7,'#72523d');
+    oval(-4,y-1,20-layer,5,'#dbad69');
+    oval(-4,y-1,11-layer,2.5,'#8d6948');
+  }
+  oval(17,-14,8,10,'#ba502f');oval(16,-16,7,8,'#f18c43');
+  rect(11,-17,11,3,'#fff1c5');
+}
+function kayakRack(){
+  rect(-35,-52,7,52,'#574d50');rect(28,-52,7,52,'#574d50');
+  rect(-39,-53,78,6,'#ba8d67');
+  poly([[-46,-69],[-32,-66],[-18,-69],[19,-69],[33,-66],[46,-72],[38,-57],[23,-53],[-22,-53],[-37,-57]],'#315966');
+  poly([[-45,-69],[-22,-66],[19,-67],[46,-72],[38,-61],[20,-58],[-24,-58],[-38,-61]],'#f49a5b');
+  oval(0,-66,13,3,'#343f4a');rect(-28,-63,3,8,'#624d43');rect(25,-64,3,8,'#624d43');
+}
+function crabPots(){
+  const net='#526a68', rim='#c2a979';
+  for(const [left,top] of [[-32,-27],[0,-27],[-17,-55]]){
+    rect(left,top,33,27,net);
+    for(let i=4;i<32;i+=7)rect(left+i,top,1.5,26,'#9ca99a');
+    for(let i=6;i<26;i+=7)rect(left,top+i,32,1.5,'#9ca99a');
+    rect(left,top,33,3,rim);rect(left,top+24,33,3,rim);
+    oval(left+15,top+13,6,4,'#3c5154');
+  }
+  rect(5,-59,2,12,'#e6c995');oval(6,-48,4,7,'#e97749');
+  rect(-2,-61,2,9,'#e6c995');oval(-1,-52,4,6,'#edc258');
 }
 const sprite=[
 '    xx       xx    ','   xOOx     xOOx   ','   xOpOxxxxxOpOx   ','   xOOOObbbOOOox   ',
@@ -313,20 +343,29 @@ function draw(time){
   items.sort((a,b)=>b.z-a.z);
   for(const obj of items){
     const p=project(obj.z,obj.l);ctx.save();ctx.translate(p.x,p.y);ctx.scale(p.s,p.s);
-    if(dusk && obj.type==='side' && obj.l<0){
-      rect(-3,-102,6,102,'#414657');rect(-9,-114,18,15,'#fff1b8');rect(-11,-117,22,4,'#504d58');
+    if(dusk && obj.type==='side'){
+      if(obj.l<0){
+        rect(-3,-102,6,102,'#414657');rect(-9,-114,18,15,'#fff1b8');rect(-11,-117,22,4,'#504d58');
+      } else {
+        rect(-7,-24,14,24,'#61575a');oval(0,-24,10,4,'#a49280');
+        for(let i=0;i<3;i++)rect(-8,-18+i*3,16,2,'#d1ac77');
+      }
+    } else if(dusk && obj.type==='crate'){
+      ropeCoil();
+    } else if(dusk && obj.type==='table'){
+      kayakRack();
+    } else if(dusk && obj.type==='stall'){
+      crabPots();
     } else if(obj.type==='table'){
       rect(-38,-55,7,55,'#654d40');rect(31,-55,7,55,'#654d40');
       rect(-42,-63,84,12,'#9c5d41');rect(-43,-65,86,5,'#f3c47d');
       for(let i=0;i<7;i++)oval(-30+i*10,-68-i%2*3,6,5,i%3?'#de8549':'#889951');
       for(let i=0;i<7;i++)rect(-42+i*12,-59,12,7,i%2?'#ffdf9e':'#43867a');
       poly([[-6,-57],[6,-57],[0,-51]],'#243d39');
-    } else if(dusk && obj.type==='stall'){
-      booth('#526987');oval(-27,0,7,7,'#444457');oval(27,0,7,7,'#444457');
+
     } else if(obj.type==='side'||obj.type==='stall')booth(obj.l<0?'#c45b48':'#3b8983');
     else if(obj.type==='crate'){
-      if(dusk) poly([[-27,-17],[-20,-28],[20,-28],[27,-17]],'#af8966');
-      rect(-27,-23,54,23,dusk?'#886655':'#805039');rect(-24,-21,48,8,'#ce8b4f');rect(-24,-10,48,7,'#dc9b59');
+      rect(-27,-23,54,23,'#805039');rect(-24,-21,48,8,'#ce8b4f');rect(-24,-10,48,7,'#dc9b59');
       rect(-21,-23,5,23,'#a06640');rect(16,-23,5,23,'#a06640');
     } else if(obj.type==='gold'){
       oval(0,-20,17,12,'#fff0a0');poly([[-9,-20],[-20,-29],[-20,-11]],'#d28a26');

@@ -80,6 +80,11 @@ function refreshMenu(){
     button.textContent=(key==='music'?'Музыка':'Эффекты')+(profile[key]?' · вкл':' · выкл');
     button.setAttribute('aria-pressed',String(profile[key]));
   }
+  if(mode==='menu'){
+    document.getElementById('detail').textContent=profile.place==='pier'
+      ? 'Перепрыгивай канаты, скользи под каяками и обходи ловушки.'
+      : 'Прыгай через ящики, скользи под высокими прилавками и собирай рыбок.';
+  }
   const goods=document.getElementById('goods');
   if(document.getElementById('shop').hidden) return;
   goods.replaceChildren();
