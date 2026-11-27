@@ -123,7 +123,7 @@ function refreshMenu(){
     }
     const button=row.lastChild;
     const owned=!item.price||profile.owned.includes(item.id), selected=profile[item.slot]===item.id;
-    button.textContent=selected?'Выбрано':owned?(item.slot==='place'?'Выбрать маршрут':item.slot==='neck'&&item.id!=='bare'?'Надеть':'Выбрать'):item.price+' 🐟';
+    button.textContent=selected?'Выбрано':owned?(item.slot==='neck'&&item.id!=='bare'?'Надеть':'Выбрать'):item.price+' 🐟';
     button.disabled=selected||(!owned&&profile.balance<item.price);
     button.setAttribute('aria-pressed',String(selected));
     button.setAttribute('aria-label',item.name+' · '+button.textContent);

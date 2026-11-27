@@ -20,7 +20,14 @@ main>canvas{touch-action:none}
 
 header{align-items:center;gap:4px}#pause{pointer-events:auto;font-size:18px;line-height:1.1;min-width:44px;min-height:44px;padding:6px;color:#fff1cb;background:#345e57}
 #break{top:37%;transform:translateX(-50%);max-width:250px}#pause-title{margin:3px 0 16px;font:900 35px Georgia,serif}#pause-title:only-child{margin:0}
-#bonus{position:absolute;top:calc(max(12px,env(safe-area-inset-top)) + 53px);left:50%;transform:translateX(-50%);white-space:nowrap;color:#5b3816;background:#ffe299;padding:5px 12px;border:2px solid #937037;border-radius:15px;font-weight:750;font-size:14px}
+#bonus{position:absolute;top:calc(max(12px,env(safe-area-inset-top)) + 53px);left:15px;pointer-events:none}
+.power-meter{display:flex;align-items:center;gap:4px;margin-bottom:3px}
+.power-meter canvas{width:28px;height:28px}
+.power-meter progress{appearance:none;width:66px;height:9px;overflow:hidden;border:1.5px solid #35483e;border-radius:6px;background:#faf0cf;color:var(--fill)}
+.power-meter progress::-webkit-progress-bar{background:#faf0cf}
+.power-meter progress::-webkit-progress-value{background:var(--fill)}
+.power-meter progress::-moz-progress-bar{background:var(--fill)}
+.power-meter[hidden]{display:none}
 #goods{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}#goods h3{grid-column:1/-1;margin:7px 0 0}
 .good{display:grid;align-content:start;align-items:stretch;gap:5px;padding:6px;border:1px solid #baaa87;border-radius:7px;background:#fff7db;font-size:13px}
 .good canvas{width:100%;height:56px;border-radius:3px;object-fit:contain;pointer-events:none;image-rendering:pixelated;background:#f1dfb8}
