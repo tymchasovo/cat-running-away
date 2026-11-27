@@ -129,7 +129,7 @@ function refreshMenu(){
       row=document.createElement('div');row.className='good';
       const name=document.createElement('span');name.textContent=item.name;
       const picture=itemPicture(item);
-      if(['neck','hat'].includes(item.slot) && item.price)picture.classList.add('sway');
+      if(['neck','hat'].includes(item.slot) && item.price)picture.classList.add(item.slot==='hat'?'hat-tilt':'sway');
       row.append(picture,name,document.createElement('button'));
       shelf.append(row);shopCards.set(item.id,row);
     }else if(item.id==='bare'||item.id==='none'){

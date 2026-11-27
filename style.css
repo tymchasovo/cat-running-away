@@ -56,9 +56,11 @@ html,body{overflow:hidden;overscroll-behavior:none}
 .good canvas{height:86px;background:transparent}
 .good button{width:100%;min-height:38px}
 @media(prefers-reduced-motion:no-preference){
- .sway{animation:shelf-sway 3s ease-in-out infinite alternate}
- .good:nth-child(even) .sway{animation-delay:-1.4s}
- @keyframes shelf-sway{from{transform:rotate(-4deg) scaleX(.94)}to{transform:rotate(4deg)}}
+ .hat-tilt,.sway{animation:hat-tilt 2.8s ease-in-out infinite;transform-origin:50% 70%}
+ .sway{animation-name:shelf-sway;animation-duration:3.2s;transform-origin:45% 40%}
+ .good:nth-child(even) :is(.sway,.hat-tilt){animation-delay:-1.4s}
+ @keyframes hat-tilt{0%,100%{transform:rotate(-4deg)}50%{transform:translateY(-2px) rotate(6deg)}}
+ @keyframes shelf-sway{0%,100%{transform:rotate(-7deg)}50%{transform:translateX(2px) rotate(7deg) skewX(2deg)}}
 }
 
 #break:not([hidden]){display:grid;gap:14px}

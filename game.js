@@ -345,9 +345,9 @@ const coats={
   silver:{x:'#3e414a',O:'#d7d7d1',b:'#626574',p:'#dbaca8',o:'#9296a0',tip:'#eeeee4'},
   grey:{x:'#454451',O:'#a3a4b1',b:'#636776',p:'#e2a4ac',o:'#828695',tip:'#ccd0d3'}
 };
-function wear(neckY,hatY,beat){
+function wear(neckY,hatY,beat,view='front'){
   for(const [id,y] of [[profile.neck,neckY],[profile.hat,hatY]]){
-    ctx.save();ctx.translate(0,y);drawWear(ctx,id,beat);ctx.restore();
+    ctx.save();ctx.translate(0,y);drawWear(ctx,id,beat,view);ctx.restore();
   }
 }
 function heldRod(palette,beat){
@@ -371,6 +371,7 @@ function cat(cx,cy,s,time){
     }
   }
   const palette=coats[profile.coat]||coats.ginger;
+  const fittedHat=profile.hat==='beret'||profile.hat==='captain';
   const facing=Math.cos((.4-spinLeft)/.4*Math.PI*2);
   if(spinLeft>0)ctx.scale(Math.sign(facing||1)*(.3+.7*Math.abs(facing)),1);
   if(slide>0){
@@ -386,7 +387,7 @@ function cat(cx,cy,s,time){
       poly([[side*8,-27],[side*17,-28-4*(1-tuck)],[side*14,-21]],palette.b);
     }
     rect(-4,-29,3,5,palette.b);rect(2,-29,3,4,palette.b);
-    wear(-17,-29,beat);
+    wear(-17,fittedHat?-25:-29,beat,'back');
     ctx.lineCap='round';ctx.beginPath();ctx.moveTo(1,-8);ctx.quadraticCurveTo(8,2,23+beat*2,1);
     ctx.strokeStyle=palette.x;ctx.lineWidth=7;ctx.stroke();ctx.strokeStyle=palette.O;ctx.lineWidth=4;ctx.stroke();
     oval(23+beat*2,1,3,2.5,palette.tip);
@@ -418,10 +419,10 @@ function cat(cx,cy,s,time){
     for(const side of [-1,1]){oval(side*9,-33,2,2.8,palette.x);oval(side*4,-29,5,3,palette.tip);}
     poly([[-3,-31],[3,-31],[0,-28]],palette.p);
   }
-  wear(-23,-41,beat);heldRod(palette,beat);
+  wear(-23,fittedHat?-33:-41,beat,facing<0?'front':'back');heldRod(palette,beat);
   ctx.restore();
 }
-const petScenes={curl:2.4,walk:2.6,dash:2.1,play:2.7};
+const petScenes={curl:2.4,walk:2.6,dash:2.1,play:2.7,wash:2.6};
 let petScene='curl',petStarted=-Infinity;
 function petProgress(){return (performance.now()/1000-petStarted)/petScenes[petScene];}
 canvas.addEventListener('click',event=>{
@@ -447,7 +448,7 @@ function sittingCat(time){
     }
   }
   ctx.save();ctx.translate(W*.5+offset,H*.94);ctx.scale(size,size);
-  drawPortrait(ctx,profile.coat,time,true,{scene:active?petScene:'',pose,step,facing});
+  drawPortrait(ctx,profile.coat,time,true,{scene:active?petScene:'',pose,step,facing,progress:active?t:0});
   ctx.restore();
 }
 function drawFish(x,y){
