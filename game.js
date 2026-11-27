@@ -111,7 +111,7 @@ function action(dir) {
 }
 el('start').onclick = start;
 el('open-shop').onclick=()=>{waiting=mode==='over';panel.hidden=true;el('shop').hidden=false;refreshMenu();};
-el('close-shop').onclick=()=>{el('shop').hidden=true;panel.hidden=false;};
+el('close-shop').onclick=()=>{notice.remove();el('shop').hidden=true;panel.hidden=false;};
 for(const key of ['music','effects']) el(key).onclick=()=>changeProfile(p=>{p[key]=!p[key];if(key==='music'&&!p.music)soundtrack.silence();soundtrack.unlock();});
 refreshMenu();
 canvas.onpointerdown = e => {
@@ -258,7 +258,7 @@ function tick(dt) {
       if(!cleared){finish();break;}
     }
   }
-  objects=objects.filter(o=>o.at>distance-6 && !((['fish','gold','rod','mint'].includes(o.type)) && o.done));
+  objects=objects.filter(o=>o.at>distance-14 && !((['fish','gold','rod','mint'].includes(o.type)) && o.done));
   updateMeter('gold',bonusLeft);updateMeter('rod',magnetLeft);updateMeter('mint',mintLeft);
   el('bonus').hidden=mode!=='run'||!(bonusLeft||magnetLeft||mintLeft);
   el('score').textContent=points();
@@ -301,16 +301,21 @@ function kayakRack(){
   oval(0,-66,13,3,'#343f4a');rect(-28,-63,3,8,'#624d43');rect(25,-64,3,8,'#624d43');
 }
 function crabPots(){
+  for(const x of [-26,26]){
+    oval(x,-7,7,7,'#34454b');oval(x,-7,3,3,'#bac5ba');
+  }
+  rect(-39,-18,78,8,'#744f41');rect(-40,-96,4,81,'#45585b');
+  rect(-46,-96,11,4,'#bd996f');
   const net='#526a68', rim='#c2a979';
-  for(const [left,top] of [[-32,-27],[0,-27],[-17,-55]]){
+  for(const [left,top] of [[-33,-44],[0,-44],[-33,-71],[0,-71],[-19,-98]]){
     rect(left,top,33,27,net);
     for(let i=4;i<32;i+=7)rect(left+i,top,1.5,26,'#9ca99a');
     for(let i=6;i<26;i+=7)rect(left,top+i,32,1.5,'#9ca99a');
     rect(left,top,33,3,rim);rect(left,top+24,33,3,rim);
     oval(left+15,top+13,6,4,'#3c5154');
   }
-  rect(5,-59,2,12,'#e6c995');oval(6,-48,4,7,'#e97749');
-  rect(-2,-61,2,9,'#e6c995');oval(-1,-52,4,6,'#edc258');
+  rect(5,-101,2,12,'#e6c995');oval(6,-90,4,7,'#e97749');
+  rect(-2,-103,2,9,'#e6c995');oval(-1,-94,4,6,'#edc258');
 }
 const sprite=[
 '    xx       xx    ','   xOOx     xOOx   ','   xOpOxxxxxOpOx   ','   xOOOObbbOOOox   ',
@@ -320,6 +325,9 @@ const sprite=[
 const coats={
   ginger:{x:'#654135',O:'#f29b46',b:'#bf592e',p:'#efac85',o:'#e18741',tip:'#f4a458'},
   tux:{x:'#21242b',O:'#333641',b:'#fff3d7',p:'#e7a4a3',o:'#e7e3ce',tip:'#fff5de'},
+  calico:{x:'#443934',O:'#fff0d6',b:'#ce7340',p:'#dc9e95',o:'#523f3a',tip:'#fff5e1'},
+  siamese:{x:'#352e34',O:'#ddc9a6',b:'#695146',p:'#c58b86',o:'#70584d',tip:'#665048'},
+  silver:{x:'#3e414a',O:'#d7d7d1',b:'#626574',p:'#dbaca8',o:'#9296a0',tip:'#eeeee4'},
   grey:{x:'#454451',O:'#a3a4b1',b:'#636776',p:'#e2a4ac',o:'#828695',tip:'#ccd0d3'}
 };
 function wear(neckY,hatY,beat){
@@ -370,13 +378,26 @@ function cat(cx,cy,s,time){
     heldRod(palette,beat);ctx.restore();return;
   }
   rect(-13,-9+beat*3,9,9,palette.b);rect(4,-9-beat*3,9,9,palette.b);
-  sprite.forEach((row,j)=>[...row].forEach((v,i)=>{if(palette[v])rect((i-9.5)*3,(j-15)*3,3.15,3.15,palette[v]);}));
+  sprite.forEach((row,j)=>[...row].forEach((v,i)=>{
+    if(!palette[v])return;
+    let shade=v;
+    if(profile.coat==='calico' && v==='O'){
+      if(i>10 && j<7)shade='o';
+      if(i<10 && j>7 || i<7 && j<4)shade='b';
+    }
+    if(profile.coat==='siamese' && v==='O' && j<4)shade='o';
+    if(profile.coat==='silver' && v==='O' && (j===8||j===11))shade='b';
+    rect((i-9.5)*3,(j-15)*3,3.15,3.15,palette[shade]);
+  }));
   if(mintLeft>durations.mint-.4){
     const twitch=Math.sin((durations.mint-mintLeft)*Math.PI/.4)*4;
     for(const side of [-1,1])poly([[side*11,-38],[side*(17+twitch),-44+twitch],[side*18,-34]],palette.O);
   }
   ctx.lineCap='round';ctx.beginPath();ctx.moveTo(1,-10);ctx.quadraticCurveTo(16,-4,20+beat*3,-21);
   ctx.strokeStyle=palette.x;ctx.lineWidth=8;ctx.stroke();ctx.strokeStyle=palette.O;ctx.lineWidth=5;ctx.stroke();
+  if(profile.coat==='silver'){
+    oval(15,-12,2.5,3,palette.b);oval(18+beat*2,-16,2.8,2,palette.b);
+  }
   oval(20+beat*3,-21,3.2,3.8,palette.tip);
   if(spinLeft>0 && facing<0){
     for(const side of [-1,1]){oval(side*9,-33,2,2.8,palette.x);oval(side*4,-29,5,3,palette.tip);}
@@ -386,29 +407,9 @@ function cat(cx,cy,s,time){
   ctx.restore();
 }
 function sittingCat(time){
-  const p=coats[profile.coat]||coats.ginger;
   ctx.save();ctx.translate(W*.5,H*.94);
   const size=Math.min(W/175,H/270);ctx.scale(size,size);
-  const phase=time%4.8;
-  const lift=Math.max(0,Math.min(1,(phase-1.4)*4,(3-phase)*4));
-  const rub=Math.sin(phase*23)*lift;
-  oval(0,0,26,5,'#9c806a');oval(13,-4,15,4,p.b);
-  oval(0,-15,17,17,p.b);oval(0,-15,11,14,p.O);
-  oval(-10,-2,7,4,p.tip);oval(10,-2,7,4,p.tip);
-  poly([[-17,-37],[-23,-45],[-7,-42]],p.O);
-  poly([[6,-41],[17,-51],[18,-35]],p.O);
-  oval(0,-34,19,15,p.O);
-  for(const side of [-1,1]){
-    oval(side*8,-34,2,2.5,p.x);
-    poly([[side*4,-39],[side*12,-36],[side*12,-38],[side*4,-41]],p.b);
-    oval(side*4,-28,5,3,p.tip);
-  }
-  poly([[-3,-30],[3,-30],[0,-27]],p.x);
-  wear(-21,-45,Math.sin(time*2)*.25);
-  const pawX=11+8*lift,pawY=-7-33*lift+2*rub;
-  ctx.lineWidth=5;ctx.lineCap='round';ctx.strokeStyle=p.b;ctx.beginPath();
-  ctx.moveTo(12,-15);ctx.quadraticCurveTo(22,-12-12*lift,pawX,pawY);ctx.stroke();
-  oval(pawX,pawY,4,4,p.tip);
+  drawPortrait(ctx,profile.coat,time,true);
   ctx.restore();
 }
 function drawFish(x,y){
@@ -574,12 +575,15 @@ function draw(time){
   if(profile.place==='market')marketStreet();
   else routeStreet(profile.place,time);
   const items=[];
-  if(profile.place!=='market')for(let z=100-distance%12;z>-5;z-=12) for(const l of [-2.05,2.05])items.push({z,l,type:'side'});
-  if(!waiting)for(const o of objects) if(o.at-distance<100 && o.at-distance>-4)items.push({z:o.at-distance,l:o.lane,type:o.type,rise:o.rise,emergeAt:o.emergeAt});
-  if(!waiting && mode!=='over')items.push({z:0,l:x,type:'cat'});
+  if(profile.place!=='market')for(let z=100-distance%12;z>-14;z-=12) for(const l of [-2.05,2.05])items.push({z,l,type:'side'});
+  if(!waiting)for(const o of objects) if(o.at-distance<100 && o.at-distance>-14)items.push({z:o.at-distance,l:o.lane,type:o.type,rise:o.rise,emergeAt:o.emergeAt});
+  if(!waiting && mode!=='over' && mode!=='menu')items.push({z:0,l:x,type:'cat'});
   items.sort((a,b)=>b.z-a.z);
   for(const obj of items){
-    const p=project(obj.z,obj.l);ctx.save();ctx.translate(p.x,p.y);ctx.scale(p.s,p.s);
+    const p=project(obj.z,obj.l);
+    // Carry tall props below the frame even on short, wide screens.
+    if(obj.z<0)p.y+=Math.pow(-obj.z/10,3)*W;
+    ctx.save();ctx.translate(p.x,p.y);ctx.scale(p.s,p.s);
     if(obj.type==='lowTable'){
       if(route){
         ctx.save();ctx.scale(1,.75);drawRouteObject(ctx,profile.place,'table',obj.l);ctx.restore();
@@ -649,7 +653,7 @@ function frame(now){
   if(mode!=='paused') soundtrack.update(mode==='menu'||mode==='over');
   const sceneTime=waiting?now/1000:mode==='menu'?now/1500:elapsed;
   draw(sceneTime);
-  if(waiting)sittingCat(sceneTime);
+  if(waiting||mode==='menu')sittingCat(sceneTime);
   else if(mode==='over')drawImpact();
   requestAnimationFrame(frame);
 }

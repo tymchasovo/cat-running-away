@@ -3,6 +3,9 @@ const catalog = [
   {group:'Кот', slot:'coat', id:'ginger', name:'Рыжий', price:0},
   {group:'Кот', slot:'coat', id:'tux', name:'Чёрно-белый', price:60},
   {group:'Кот', slot:'coat', id:'grey', name:'Серый', price:60},
+  {group:'Кот', slot:'coat', id:'calico', name:'Трёхцветная', price:60},
+  {group:'Кот', slot:'coat', id:'siamese', name:'Сиамская', price:60},
+  {group:'Кот', slot:'coat', id:'silver', name:'Серебристая полосатая', price:60},
   {group:'Аксессуары', slot:'neck', id:'bare', name:'Без косынки', price:0},
   {group:'Аксессуары', slot:'neck', id:'scarf', name:'Красная косынка', price:30},
   {group:'Аксессуары', slot:'neck', id:'bow', name:'Зелёная бабочка', price:40},
@@ -54,14 +57,8 @@ function itemPicture(item){
   const dark='#48423d', sky=item.id==='pier'?'#686385':'#b7d9bb';
   if(item.slot==='place')fill(0,0,100,58,sky);
   if(item.slot==='coat'||item.id==='bare'||item.id==='none'){
-    const p=coats[item.slot==='coat'?item.id:profile.coat]||coats.ginger;
-    oval(50,56,20,22,p.b);
-    shape([[31,27],[29,7],[43,16],[57,16],[71,7],[69,29]],p.x);
-    shape([[32,11],[35,25],[42,18]],p.p);shape([[68,11],[65,25],[58,18]],p.p);
-    oval(50,30,21,17,p.O);fill(46,14,3,7,p.b);fill(52,14,3,6,p.b);
-    oval(41,29,2,3,p.x);oval(59,29,2,3,p.x);
-    oval(46,36,6,4,p.tip);oval(54,36,6,4,p.tip);
-    shape([[47,33],[53,33],[50,36]],p.p);
+    brush.translate(50,57);brush.scale(.96,.96);
+    drawPortrait(brush,item.slot==='coat'?item.id:profile.coat,0);
   } else if(item.id==='scarf'){
     shape([[17,16],[76,15],[62,30],[42,48]],'#98333a');
     shape([[17,16],[64,21],[43,42]],'#db5247');
@@ -86,6 +83,17 @@ function itemPicture(item){
   }
   return art;
 }
+const notice=document.createElement('div');
+notice.className='shop-note';notice.setAttribute('role','status');
+let noticeTimer;
+function showShortfall(row,missing){
+  clearTimeout(noticeTimer);
+  const unit=new Intl.PluralRules('ru').select(missing);
+  const noun=unit==='one'?'рыбки':'рыбок';
+  notice.textContent=Math.random()<.5?'Пока дороговато':'Не хватает '+missing+' '+noun;
+  row.append(notice);
+  noticeTimer=setTimeout(()=>notice.remove(),1800);
+}
 const shopCards=new Map();
 function refreshMenu(){
   document.getElementById('balance').textContent=profile.balance;
@@ -102,6 +110,10 @@ function refreshMenu(){
   }
   const goods=document.getElementById('goods');
   if(document.getElementById('shop').hidden) return;
+  const preview=document.getElementById('shop-cat');
+  const brush=preview.getContext('2d');
+  brush.clearRect(0,0,preview.width,preview.height);
+  brush.save();brush.translate(45,76);drawPortrait(brush,profile.coat,0,true);brush.restore();
   let shelf;
   for(const item of catalog){
     let row=shopCards.get(item.id);
@@ -121,15 +133,20 @@ function refreshMenu(){
     }else if(item.id==='bare'||item.id==='none'){
       row.firstChild.replaceWith(itemPicture(item));
     }
-    const button=row.lastChild;
+    const button=row.querySelector('button');
     const owned=!item.price||profile.owned.includes(item.id), selected=profile[item.slot]===item.id;
     button.textContent=selected?'Выбрано':owned?(item.slot==='neck'&&item.id!=='bare'?'Надеть':'Выбрать'):item.price+' 🐟';
-    button.disabled=selected||(!owned&&profile.balance<item.price);
+    button.disabled=selected;
+    const shortfall=!owned && profile.balance<item.price;
+    button.classList.toggle('shortfall',shortfall);
+    row.onclick=event=>{
+      if(shortfall && event.target!==button)button.click();
+    };
     button.setAttribute('aria-pressed',String(selected));
     button.setAttribute('aria-label',item.name+' · '+button.textContent);
     button.onclick=()=>changeProfile(p=>{
       if(item.price&&!p.owned.includes(item.id)){
-        if(p.balance<item.price)return;
+        if(p.balance<item.price){showShortfall(row,item.price-p.balance);return;}
         p.balance-=item.price;p.owned.push(item.id);
       }
       p[item.slot]=item.id;

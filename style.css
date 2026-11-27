@@ -33,8 +33,8 @@ header{align-items:center;gap:4px}#pause{pointer-events:auto;font-size:18px;line
 .good canvas{width:100%;height:56px;border-radius:3px;object-fit:contain;pointer-events:none;image-rendering:pixelated;background:#f1dfb8}
 .good button{margin-top:auto;padding:5px 4px}
 @media(prefers-reduced-motion:no-preference){
-  #start strong{display:inline-block;animation:arrow-step 2s ease-in-out infinite}
-  @keyframes arrow-step{0%,55%,100%{transform:translateX(0)}76%{transform:translateX(5px)}}
+  #start strong{display:inline-block;animation:arrow-step 1s ease-in-out infinite}
+  @keyframes arrow-step{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
 }
 
 html,body{overflow:hidden;overscroll-behavior:none}
@@ -42,7 +42,7 @@ html,body{overflow:hidden;overscroll-behavior:none}
 .button-face{display:inline-block;padding:9px 22px;border:2px solid #343d31;border-radius:6px;background:#ffb94d;box-shadow:0 4px #83452d}
 @media(prefers-reduced-motion:no-preference){
  .button-face{animation:button-hop 2s ease-in-out infinite}
- @keyframes button-hop{0%,60%,90%,100%{transform:translateY(0)}74%{transform:translateY(-4px)}}
+ @keyframes button-hop{0%,60%,90%,100%{transform:translateY(0)}75%{transform:translateY(-4px)}}
 }
 
 #shop{top:max(10px,env(safe-area-inset-top));bottom:max(10px,env(safe-area-inset-bottom));width:96%;max-height:none;padding:14px;touch-action:pan-x pan-y}
@@ -60,3 +60,11 @@ html,body{overflow:hidden;overscroll-behavior:none}
  .good:nth-child(even) .sway{animation-delay:-1.4s}
  @keyframes shelf-sway{from{transform:rotate(-4deg) scaleX(.94)}to{transform:rotate(4deg)}}
 }
+
+#break:not([hidden]){display:grid;gap:14px}
+#pause-title{margin:0}
+#shop{inset:0;width:100%;max-height:none;transform:none;border:0;border-radius:0;box-shadow:none;padding:max(16px,env(safe-area-inset-top)) 16px max(8px,env(safe-area-inset-bottom));background:#fff1ca}
+#shop-cat{width:70px;height:72px;object-fit:contain}
+.good{position:relative}
+.good .shortfall{background:#e5d9bb;color:#575449}
+.shop-note{position:absolute;inset:auto 3px 48px;padding:7px;background:#344e49;color:white;text-align:center;border-radius:6px;font-size:13px;pointer-events:none}
