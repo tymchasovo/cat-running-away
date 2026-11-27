@@ -29,11 +29,12 @@ function drawWear(c,id,beat=0){
   }
 }
 function festiveLight(c,x,y,r,color,phase){
-  const glow=(1+Math.sin(phase))/2;
+  const glow=Math.min(1,Math.max(0,.5+1.25*Math.sin(phase)));
   c.save();c.fillStyle=color;
-  for(const [radius,alpha] of [[r*(1.5+glow),.06+.14*glow],[r,.5+.5*glow]]){
+  for(const [radius,alpha] of [[r*3.5,.24*glow],[r*1.85,.38*glow],[r,.22+.78*glow]]){
     c.globalAlpha=alpha;c.beginPath();c.arc(x,y,radius,0,Math.PI*2);c.fill();
   }
+  if(glow>.65){c.globalAlpha=glow;c.fillStyle="#fff5d6";c.fillRect(x-r*.45,y-r*.45,r*.9,r*.9);}
   c.restore();
 }
 function drawRouteObject(c,place,type,side=1,time=0){
@@ -43,7 +44,7 @@ function drawRouteObject(c,place,type,side=1,time=0){
     if(type==='crate'){box(-24,-27,48,27,'#bd4751');box(-27,-29,54,6,'#d75e65');box(-4,-29,8,29,'#ffcd69');disc(-5,-32,5,'#ffce60');disc(5,-32,5,'#ffce60');}
     else if(type==='table'){box(-35,-59,6,59,'#498073');box(29,-59,6,59,'#498073');box(-38,-65,76,13,'#346558');for(let i=-30;i<=30;i+=10)disc(i,-58,2.8,i%20?'#ffd781':'#f58580');}
     else if(type==='stall'){disc(0,-18,21,'#f8faf1');disc(0,-46,14,'#fffdf4');box(-14,-60,28,4,brown);box(-9,-70,18,11,brown);box(-12,-36,24,4,'#bf4647');disc(-4,-49,1.8,brown);shape([[0,-47],[11,-45],[0,-43]],'#e8863e');}
-    else {box(-4,-20,8,20,brown);for(let i=0;i<3;i++)shape([[-30+i*6,-12-i*16],[0,-69-i*12],[30-i*6,-12-i*16]],i%2?'#438773':'#326e61');for(let i=0;i<9;i++)festiveLight(c,Math.sin(i*4)*(5+i),-72+i*6,2.6,i%2?'#ffca63':'#ff9992',time*(1.3+i*.09)+i*2.4+side);disc(0,-92,4,'#ffe292');}
+    else {box(-4,-20,8,20,brown);for(let i=0;i<3;i++)shape([[-30+i*6,-12-i*16],[0,-69-i*12],[30-i*6,-12-i*16]],i%2?'#438773':'#326e61');for(let i=0;i<9;i++)festiveLight(c,Math.sin(i*4)*(5+i),-72+i*6,2.6,i%2?'#ffca63':'#ff9992',time*2.8+Math.floor(i/3)*2.1+side);disc(0,-92,4,'#ffe292');}
   }else if(place==='park'){
     if(type==='crate'){for(const [x,y] of [[-16,-9],[0,-9],[16,-9],[-8,-22],[8,-22]]){disc(x,y,9,brown);disc(x,y,6,'#dba66a');disc(x,y,2,'#a16a46');}}
     else if(type==='table'){shape([[-35,0],[-35,-66],[-4,-60],[33,-72],[39,-64],[2,-52],[-28,-54],[-28,0]],brown);for(let i=-22;i<38;i+=10)disc(i,-65-Math.abs(i)/8,7,'#c77736');}
@@ -62,18 +63,24 @@ function drawRouteObject(c,place,type,side=1,time=0){
   }
 }
 
-function drawPowerup(c,type){
+function drawPowerup(c,type,phase=null){
   const {disc,shape,box}=illustration(c);
+  const field=phase!==null, wave=field?Math.sin(phase):0;
+  if(field){
+    c.translate(0,-6+wave*3);c.scale(1.35,1.35);
+    if(type==='rod')c.rotate(wave*.13);
+    if(type==='mint')c.scale(Math.max(.28,Math.abs(Math.cos(phase*.7))),1);
+  }
   if(type==='mint'){
-    disc(0,-21,19,'#e0eed0');
-    shape([[-11,-9],[-13,-22],[-9,-22],[-9,-31],[-5,-29],[1,-36],[11,-38],[12,-27],[9,-22],[12,-22],[6,-14],[-2,-10]],'#42875d');
+    if(!field)disc(0,-21,19,'#e0eed0');
+    shape([[-11,-9],[-13,-22],[-9,-22],[-9,-31],[-5,-29],[1,-36],[11,-38],[12,-27],[9,-22],[12,-22],[6,-14],[-2,-10]],field&&Math.cos(phase*.7)<0?'#91bd73':'#42875d');
     shape([[-13,-6],[-11,-5],[8,-32]],'#245941');
   }else if(type==='rod'){
-    disc(0,-23,21,'#c7efd5');shape([[-14,-6],[-10,-5],[9,-39],[7,-41]],'#805332');
-    box(8,-39,1.6,19,'#46636b');disc(8,-18,3,'#dc6650');disc(-8,-13,4,'#456562');
+    if(!field)disc(0,-23,21,'#c7efd5');shape([[-14,-6],[-10,-5],[9,-39],[7,-41]],'#805332');
+    c.save();c.translate(8,-39);c.rotate(wave*.22);box(0,0,1.6,19,'#46636b');disc(0,21,3,'#dc6650');c.restore();disc(-8,-13,4,'#456562');
   }else{
-    c.save();c.translate(0,-20);c.scale(1,.65);disc(0,0,17,'#fff0a0');disc(0,0,12,'#f9b62d');c.restore();
-    shape([[-9,-20],[-20,-29],[-20,-11]],'#d28a26');disc(6,-22,2,'#785128');
+    c.save();c.translate(0,-20);c.scale(1,.65);if(!field)disc(0,0,17,'#fff0a0');disc(0,0,12,'#f9b62d');c.restore();
+    shape([[-9,-20],[-20+wave*3,-29+wave*2],[-20+wave*3,-11+wave*2]],'#d28a26');disc(6,-22,2,'#785128');if(field && wave>.3)box(-6+wave*8,-24,2,6,'#fff4aa');
     shape([[12,-38],[14,-33],[18,-32],[14,-30],[12,-26],[11,-30],[7,-32],[11,-34]],'#fff4af');
   }
 }
