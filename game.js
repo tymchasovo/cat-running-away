@@ -163,7 +163,7 @@ function spawnSchool(start){
   let at=start;
   for(let i=0;i<count;i++){
     const free=[-1,0,1].filter(l=>!objects.some(o=>o.lane===l && Math.abs(o.at-at)<1.7));
-    if(free.length)objects.push({at,lane:free[Math.floor(Math.random()*free.length)],type:'fish',bonus:true,emergeAt:elapsed+i*.032});
+    if(free.length)objects.push({at,lane:free[Math.floor(Math.random()*free.length)],type:'fish',emergeAt:elapsed+i*.032});
     at+=.8+Math.random()*1.6;
   }
   return at+2+Math.random()*8;
@@ -171,7 +171,8 @@ function spawnSchool(start){
 function tick(dt) {
   spinLeft=Math.max(0,spinLeft-dt);goldFlash=Math.max(0,goldFlash-dt);
   const ramp=Math.max(0,Math.min(1,(durations.mint-mintLeft)/.35,mintLeft/.35));
-  const speed=Math.min(17,8+elapsed*.15)*(1+.2*ramp);
+  const baseSpeed=8+.2*Math.min(elapsed,45)+.045*Math.max(0,elapsed-45);
+  const speed=baseSpeed*(1+.2*ramp);
   mintLeft=Math.max(0,mintLeft-dt);
   let advance = speed*dt;
   if (lesson) {
@@ -224,8 +225,7 @@ function tick(dt) {
   }
   if(bonusLeft>0){
     bonusLeft=Math.max(0,bonusLeft-dt);
-    if(!bonusLeft)objects=objects.filter(o=>!o.bonus && !o.pulling);
-    else if(nextTrail<distance+30)nextTrail=spawnSchool(nextTrail);
+    if(bonusLeft && nextTrail<distance+30)nextTrail=spawnSchool(nextTrail);
   }
   magnetLeft=Math.max(0,magnetLeft-dt);
   for(const o of objects) {
@@ -239,6 +239,7 @@ function tick(dt) {
     if(o.at>distance)continue;
     o.done=true;
     if(!o.pulling && Math.abs(o.lane-x)>.48) continue;
+    if(o.type in durations)o.collected=true;
     if(o.type==='gold'){
       goldFlash=.38;bonusLeft=durations.gold;nextTrail=spawnSchool(distance+6);
       soundtrack.fish();
@@ -248,7 +249,7 @@ function tick(dt) {
       mintLeft=durations.mint;soundtrack.fish();
     } else if(o.type==='fish') {
       if(o.pulling || (o.rise?height()>.35:height()<.65)){
-        fish++; el('fish').textContent=fish;
+        o.collected=true;fish++; el('fish').textContent=fish;
         soundtrack.fish(); changeProfile(p=>{p.balance++;});
       }
     }
@@ -258,7 +259,7 @@ function tick(dt) {
       if(!cleared){finish();break;}
     }
   }
-  objects=objects.filter(o=>o.at>distance-14 && !((['fish','gold','rod','mint'].includes(o.type)) && o.done));
+  objects=objects.filter(o=>o.at>distance-14 && !o.collected);
   updateMeter('gold',bonusLeft);updateMeter('rod',magnetLeft);updateMeter('mint',mintLeft);
   el('bonus').hidden=mode!=='run'||!(bonusLeft||magnetLeft||mintLeft);
   el('score').textContent=points();
@@ -271,6 +272,11 @@ function oval(x,y,a,b,color){ctx.fillStyle=color;ctx.beginPath();ctx.ellipse(x,y
 function project(z,lane){
   const scale=15/(15+z);
   return {x:W*(.5+lane*.255*scale),y:H*(.27+.54*scale),s:W/410*scale};
+}
+function passingPoint(z,lane){
+  const p=project(Math.max(z,-9),lane);
+  if(z<0)p.y+=Math.pow(-z/10,3)*W;
+  return p;
 }
 function booth(color){
   rect(-37,-80,5,79,'#795441');rect(31,-80,5,79,'#795441');
@@ -406,10 +412,28 @@ function cat(cx,cy,s,time){
   wear(-23,-41,beat);heldRod(palette,beat);
   ctx.restore();
 }
+let portraitTapAt=-Infinity, portraitTapSide=1;
+canvas.addEventListener('click',event=>{
+  if(mode!=='menu'||panel.hidden)return;
+  const bounds=canvas.getBoundingClientRect(),size=Math.min(W/175,H/270);
+  const dx=event.clientX-bounds.left-W*.5,dy=event.clientY-bounds.top-H*.94;
+  if(Math.abs(dx)>26*size||dy< -60*size||dy>5*size)return;
+  portraitTapSide=dx<0?-1:1;portraitTapAt=performance.now();
+});
 function sittingCat(time){
   ctx.save();ctx.translate(W*.5,H*.94);
   const size=Math.min(W/175,H/270);ctx.scale(size,size);
   drawPortrait(ctx,profile.coat,time,true);
+  const phase=(performance.now()-portraitTapAt)/700;
+  const wash=time%5.5;
+  const reaching=phase<1,side=reaching?portraitTapSide:-1;
+  const lift=reaching?Math.sin(Math.PI*phase):wash<1.1?Math.sin(Math.PI*wash/1.1):0;
+  if(lift>0){
+    const px=side*(9+(reaching?18:4)*lift),py=-4-(reaching?19:27)*lift;
+    ctx.strokeStyle=(coats[profile.coat]||coats.ginger).O;ctx.lineCap='round';ctx.lineWidth=6;
+    ctx.beginPath();ctx.moveTo(side*9,-15);ctx.lineTo(px,py);ctx.stroke();
+    oval(px,py,4,4,(coats[profile.coat]||coats.ginger).tip);
+  }
   ctx.restore();
 }
 function drawFish(x,y){
@@ -542,8 +566,8 @@ function marketStreet(){
     for(const side of [-1,1])marketBay(z,side,index+(side>0?2:0));
   }
   // Suspended bunting links opposite shopfronts across the lane.
-  for(let z=130-distance%35;z>0;z-=35){
-    const a=project(z,-2.05),b=project(z,2.05),y=a.y-116*a.s;
+  for(let z=130-distance%35;z>-14;z-=35){
+    const a=passingPoint(z,-2.05),b=passingPoint(z,2.05),y=a.y-116*a.s;
     ctx.strokeStyle='#856e59';ctx.lineWidth=Math.max(.5,a.s*1.4);
     ctx.beginPath();ctx.moveTo(a.x,y);ctx.quadraticCurveTo(W*.5,y+23*a.s,b.x,y);ctx.stroke();
     for(let j=1;j<9;j++){
@@ -575,14 +599,12 @@ function draw(time){
   if(profile.place==='market')marketStreet();
   else routeStreet(profile.place,time);
   const items=[];
-  if(profile.place!=='market')for(let z=100-distance%12;z>-14;z-=12) for(const l of [-2.05,2.05])items.push({z,l,type:'side'});
+  if(profile.place!=='market')for(let z=100-distance%12;z>-14;z-=12) for(const side of [-1,1])items.push({z,l:side*(dusk?1.54:2.05),type:'side'});
   if(!waiting)for(const o of objects) if(o.at-distance<100 && o.at-distance>-14)items.push({z:o.at-distance,l:o.lane,type:o.type,rise:o.rise,emergeAt:o.emergeAt});
   if(!waiting && mode!=='over' && mode!=='menu')items.push({z:0,l:x,type:'cat'});
   items.sort((a,b)=>b.z-a.z);
   for(const obj of items){
-    const p=project(obj.z,obj.l);
-    // Carry tall props below the frame even on short, wide screens.
-    if(obj.z<0)p.y+=Math.pow(-obj.z/10,3)*W;
+    const p=passingPoint(obj.z,obj.l);
     ctx.save();ctx.translate(p.x,p.y);ctx.scale(p.s,p.s);
     if(obj.type==='lowTable'){
       if(route){
@@ -631,6 +653,7 @@ function draw(time){
         drawPowerup(ctx,'gold',time*5);ctx.restore();
       }
       oval(0,0,22-height()*6,6,'#a07c62');cat(0,-height()*65,1.55,time);
+      if(profile.place==='yard' && !air)drawPawSplash(time);
     }
     if(['crate','table','lowTable'].includes(obj.type)){
       const y=obj.type==='crate'?-15:obj.type==='table'?-57:-43;

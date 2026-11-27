@@ -16,7 +16,7 @@ const catalog = [
   {group:'Аксессуары', slot:'hat', id:'cap', name:'Новогодний колпачок', price:70},
   {group:'Маршрут', slot:'place', id:'market', name:'Утренний рынок', price:0},
   {group:'Маршрут', slot:'place', id:'pier', name:'Вечерняя набережная', price:120},
-  {group:'Маршрут', slot:'place', id:'roofs', name:'Черепичные крыши', price:160},
+  {group:'Маршрут', slot:'place', id:'yard', name:'Двор после дождя', price:160},
   {group:'Маршрут', slot:'place', id:'park', name:'Осенний парк', price:200},
   {group:'Маршрут', slot:'place', id:'square', name:'Новогодняя площадь', price:240},
 ];
@@ -27,6 +27,8 @@ function readProfile(){
     const stored = JSON.parse(localStorage.getItem(saveKey));
     if(stored && Number.isSafeInteger(stored.balance) && stored.balance>=0 && Array.isArray(stored.owned)){
       Object.assign(profile,stored);
+      if(profile.place==='roofs')profile.place='yard';
+      profile.owned=profile.owned.map(id=>id==='roofs'?'yard':id);
     }
   } catch {}
 }
