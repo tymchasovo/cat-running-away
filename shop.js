@@ -5,11 +5,20 @@ const catalog = [
   {group:'Кот', slot:'coat', id:'grey', name:'Серый', price:60},
   {group:'Аксессуар', slot:'neck', id:'bare', name:'Без косынки', price:0},
   {group:'Аксессуар', slot:'neck', id:'scarf', name:'Красная косынка', price:30},
+  {group:'Аксессуар', slot:'neck', id:'bow', name:'Зелёная бабочка', price:40},
+  {group:'Аксессуар', slot:'neck', id:'dots', name:'Синий платок', price:50},
+  {group:'Аксессуар', slot:'neck', id:'winter', name:'Праздничный шарф', price:55},
+  {group:'Аксессуар', slot:'hat', id:'none', name:'Без шапки', price:0},
+  {group:'Аксессуар', slot:'hat', id:'panama', name:'Жёлтая панама', price:80},
+  {group:'Аксессуар', slot:'hat', id:'cap', name:'Новогодний колпачок', price:70},
   {group:'Маршрут', slot:'place', id:'market', name:'Утренний рынок', price:0},
-  {group:'Маршрут', slot:'place', id:'pier', name:'Вечерняя набережная', price:120}
+  {group:'Маршрут', slot:'place', id:'pier', name:'Вечерняя набережная', price:120},
+  {group:'Маршрут', slot:'place', id:'roofs', name:'Черепичные крыши', price:160},
+  {group:'Маршрут', slot:'place', id:'park', name:'Осенний парк', price:200},
+  {group:'Маршрут', slot:'place', id:'square', name:'Новогодняя площадь', price:240},
 ];
 const saveKey = 'cat-running-away.wallet.v1';
-let profile = {balance:0, owned:[], coat:'ginger', neck:'bare', place:'market', music:true, effects:true};
+let profile = {balance:0, owned:[], coat:'ginger', neck:'bare', hat:'none', place:'market', music:true, effects:true};
 function readProfile(){
   try {
     const stored = JSON.parse(localStorage.getItem(saveKey));
@@ -44,7 +53,7 @@ function itemPicture(item){
   }
   const dark='#48423d', sky=item.id==='pier'?'#686385':'#b7d9bb';
   fill(0,0,100,58,item.slot==='place'?sky:'#f1dfb8');
-  if(item.slot==='coat'||item.id==='bare'){
+  if(item.slot==='coat'||item.id==='bare'||item.id==='none'){
     const p=coats[item.slot==='coat'?item.id:profile.coat]||coats.ginger;
     oval(50,56,20,22,p.b);
     shape([[31,27],[29,7],[43,16],[57,16],[71,7],[69,29]],p.x);
@@ -59,6 +68,11 @@ function itemPicture(item){
     shape([[58,20],[72,12],[78,18],[68,27]],'#c13f44');
     shape([[69,23],[88,28],[79,32],[84,38],[64,28]],'#ae363d');
     fill(28,20,15,2,'#f39372');
+  } else if(item.slot==='neck'||item.slot==='hat'){
+    brush.translate(48,32);brush.scale(1.9,1.9);drawWear(brush,item.id);
+  } else if(routes[item.id]){
+    const route=routes[item.id];fill(0,0,100,58,route.sky);fill(0,38,100,20,route.ground);
+    brush.translate(32,48);brush.scale(.44,.44);drawRouteObject(brush,item.id,'side');brush.translate(90,10);drawRouteObject(brush,item.id,'crate');
   } else if(item.id==='market'){
     fill(0,37,100,21,'#d9aa7a');fill(20,20,4,30,dark);fill(75,20,4,30,dark);
     for(let i=0;i<7;i++)fill(14+i*10,13,10,13,i%2?'#fff0b8':'#c15d42');
@@ -72,6 +86,10 @@ function itemPicture(item){
   }
   return art;
 }
+let shopPage=0;
+function turnPage(delta){shopPage+=delta;refreshMenu();}
+document.getElementById('prev').onclick=()=>turnPage(-1);
+document.getElementById('next').onclick=()=>turnPage(1);
 function refreshMenu(){
   document.getElementById('balance').textContent=profile.balance;
   if(mode==='menu'||mode==='over') document.getElementById('fish').textContent=profile.balance;
@@ -81,15 +99,23 @@ function refreshMenu(){
     button.setAttribute('aria-pressed',String(profile[key]));
   }
   if(mode==='menu'){
-    document.getElementById('detail').textContent=profile.place==='pier'
+    document.getElementById('detail').textContent=routes[profile.place]?.tip || (profile.place==='pier'
       ? 'Перепрыгивай канаты, скользи под каяками и обходи ловушки.'
-      : 'Прыгай через ящики, скользи под высокими прилавками и собирай рыбок.';
+      : 'Прыгай через ящики, скользи под высокими прилавками и собирай рыбок.');
   }
   const goods=document.getElementById('goods');
   if(document.getElementById('shop').hidden) return;
   goods.replaceChildren();
   let group='';
-  for(const item of catalog){
+  const pages=[];
+  for(const category of new Set(catalog.map(item=>item.group))){
+    const items=catalog.filter(item=>item.group===category);
+    for(let i=0;i<items.length;i+=2)pages.push(items.slice(i,i+2));
+  }
+  document.getElementById('prev').disabled=shopPage===0;
+  document.getElementById('next').disabled=shopPage===pages.length-1;
+  document.getElementById('page').textContent=(shopPage+1)+' / '+pages.length;
+  for(const item of pages[shopPage]){
     if(group!==item.group){
       group=item.group;const heading=document.createElement('h3');heading.textContent=group;goods.append(heading);
     }

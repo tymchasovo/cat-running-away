@@ -1,7 +1,8 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <link rel="apple-touch-icon" href="icons/cat-180.png"><link rel="icon" href="icons/cat-192.png"><link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#172f37"><title>Cat Running Away</title><link rel="stylesheet" href="style.css">
 </head>
 <body><main>
@@ -9,14 +10,14 @@
   <header><span>🐾 <b id="score">0</b></span><span id="fish-count" aria-label="Рыбки">🐟 <b id="fish">0</b></span><span>Рекорд <b id="best">0</b></span><button id="pause" aria-label="Пауза" hidden>Ⅱ</button></header>
   <section id="panel"><h1>Cat<br><em>Running</em><br>Away</h1>
     <p id="detail">Прыгай через ящики, скользи под высокими прилавками и собирай рыбок.</p>
-    <button id="start"><span id="start-label">Играть</span> <strong aria-hidden="true">→</strong></button>
+    <button id="start"><span class="button-face"><span id="start-label">Играть</span> <strong aria-hidden="true">→</strong></span></button>
     <button id="open-shop" class="secondary">Лавка</button>
     <div class="audio"><button id="music"></button><button id="effects"></button></div>
   </section>
   <section id="shop" hidden><h2>Рыбная лавка</h2><p>В кошельке 🐟 <b id="balance">0</b></p>
-    <div id="goods"></div><button id="close-shop" class="secondary">Назад</button>
+    <div id="goods"></div><nav aria-label="Страницы лавки"><button id="prev">Назад</button><small id="page"></small><button id="next">Дальше</button></nav><button id="close-shop" class="secondary">В меню</button>
   </section>
   <div id="bonus" hidden></div>
   <section id="break" hidden><h2 id="pause-title">Пауза</h2><button id="resume">Продолжить</button></section>
   <div id="hint" hidden></div>
-</main><script src="shop.js"></script><script src="sound.js"></script><script src="game.js"></script></body></html>
+</main><script src="art.js"></script><script src="shop.js"></script><script src="sound.js"></script><script src="game.js"></script></body></html>

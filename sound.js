@@ -2,7 +2,7 @@
 const soundtrack = (() => {
   let audio, nextBeat=0, beat=0, lastFish=-2, streak=0;
   const voices=new Set();
-  const halfBeat=.31;
+
   const chords=[[55,59,62],[52,55,59],[48,52,55],[50,54,57]];
   const melody=[
     [71,0,69,67,0,0,69,0], [71,0,74,0,71,0,67,0],
@@ -35,7 +35,8 @@ const soundtrack = (() => {
   return {
     unlock,silence,
     start(){unlock();silence();beat=0;lastFish=-2;},
-    update(){
+    update(menu=false){
+      const halfBeat=menu?.47:.31;
       if(!audio||audio.state!=='running'||!profile.music||document.hidden)return;
       const now=audio.currentTime;
       nextBeat=Math.max(now,nextBeat);
@@ -45,11 +46,17 @@ const soundtrack = (() => {
         if(phrase[step]){
           let length=1;
           while(step+length<8&&!phrase[step+length])length++;
-          note(hz(phrase[step]),nextBeat,length*halfBeat+.075,.032,'triangle',.038,.13);
+          note(hz(phrase[step]),nextBeat,length*halfBeat+.075,menu?.021:.032,menu?'sine':'triangle',.038,.13);
         }
         if(step===0||step===4)note(hz(chords[bar][step===0?0:2]-12),nextBeat,.86,.035,'sine',.06,.22);
         nextBeat+=halfBeat;beat++;
       }
+    },
+    impact(){
+      if(!audio||audio.state!=='running'||!profile.effects)return;
+      const now=audio.currentTime;
+      note(128,now,.16,.074,'triangle',.006,.13);
+      note(72,now+.045,.23,.065,'sine',.009,.18);
     },
     fish(){
       if(!audio||audio.state!=='running'||!profile.effects)return;
