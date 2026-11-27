@@ -3,14 +3,14 @@ const catalog = [
   {group:'Кот', slot:'coat', id:'ginger', name:'Рыжий', price:0},
   {group:'Кот', slot:'coat', id:'tux', name:'Чёрно-белый', price:60},
   {group:'Кот', slot:'coat', id:'grey', name:'Серый', price:60},
-  {group:'Аксессуар', slot:'neck', id:'bare', name:'Без косынки', price:0},
-  {group:'Аксессуар', slot:'neck', id:'scarf', name:'Красная косынка', price:30},
-  {group:'Аксессуар', slot:'neck', id:'bow', name:'Зелёная бабочка', price:40},
-  {group:'Аксессуар', slot:'neck', id:'dots', name:'Синий платок', price:50},
-  {group:'Аксессуар', slot:'neck', id:'winter', name:'Праздничный шарф', price:55},
-  {group:'Аксессуар', slot:'hat', id:'none', name:'Без шапки', price:0},
-  {group:'Аксессуар', slot:'hat', id:'panama', name:'Жёлтая панама', price:80},
-  {group:'Аксессуар', slot:'hat', id:'cap', name:'Новогодний колпачок', price:70},
+  {group:'Аксессуары', slot:'neck', id:'bare', name:'Без косынки', price:0},
+  {group:'Аксессуары', slot:'neck', id:'scarf', name:'Красная косынка', price:30},
+  {group:'Аксессуары', slot:'neck', id:'bow', name:'Зелёная бабочка', price:40},
+  {group:'Аксессуары', slot:'neck', id:'dots', name:'Синий платок', price:50},
+  {group:'Аксессуары', slot:'neck', id:'winter', name:'Праздничный шарф', price:55},
+  {group:'Аксессуары', slot:'hat', id:'none', name:'Без шапки', price:0},
+  {group:'Аксессуары', slot:'hat', id:'panama', name:'Жёлтая панама', price:80},
+  {group:'Аксессуары', slot:'hat', id:'cap', name:'Новогодний колпачок', price:70},
   {group:'Маршрут', slot:'place', id:'market', name:'Утренний рынок', price:0},
   {group:'Маршрут', slot:'place', id:'pier', name:'Вечерняя набережная', price:120},
   {group:'Маршрут', slot:'place', id:'roofs', name:'Черепичные крыши', price:160},
@@ -52,7 +52,7 @@ function itemPicture(item){
     brush.fillStyle=color;brush.beginPath();brush.ellipse(x,y,w,h,0,0,Math.PI*2);brush.fill();
   }
   const dark='#48423d', sky=item.id==='pier'?'#686385':'#b7d9bb';
-  fill(0,0,100,58,item.slot==='place'?sky:'#f1dfb8');
+  if(item.slot==='place')fill(0,0,100,58,sky);
   if(item.slot==='coat'||item.id==='bare'||item.id==='none'){
     const p=coats[item.slot==='coat'?item.id:profile.coat]||coats.ginger;
     oval(50,56,20,22,p.b);
@@ -86,10 +86,7 @@ function itemPicture(item){
   }
   return art;
 }
-let shopPage=0;
-function turnPage(delta){shopPage+=delta;refreshMenu();}
-document.getElementById('prev').onclick=()=>turnPage(-1);
-document.getElementById('next').onclick=()=>turnPage(1);
+const shopCards=new Map();
 function refreshMenu(){
   document.getElementById('balance').textContent=profile.balance;
   if(mode==='menu'||mode==='over') document.getElementById('fish').textContent=profile.balance;
@@ -105,22 +102,26 @@ function refreshMenu(){
   }
   const goods=document.getElementById('goods');
   if(document.getElementById('shop').hidden) return;
-  goods.replaceChildren();
-  let group='';
-  const pages=[];
-  for(const category of new Set(catalog.map(item=>item.group))){
-    const items=catalog.filter(item=>item.group===category);
-    for(let i=0;i<items.length;i+=2)pages.push(items.slice(i,i+2));
-  }
-  document.getElementById('prev').disabled=shopPage===0;
-  document.getElementById('next').disabled=shopPage===pages.length-1;
-  document.getElementById('page').textContent=(shopPage+1)+' / '+pages.length;
-  for(const item of pages[shopPage]){
-    if(group!==item.group){
-      group=item.group;const heading=document.createElement('h3');heading.textContent=group;goods.append(heading);
+  let shelf;
+  for(const item of catalog){
+    let row=shopCards.get(item.id);
+    if(!row){
+      if(!shelf || shelf.getAttribute('aria-label')!==item.group){
+        const heading=document.createElement('h3');heading.textContent=item.group;
+        shelf=document.createElement('div');shelf.className='shelf';shelf.tabIndex=0;
+        shelf.setAttribute('role','region');shelf.setAttribute('aria-label',item.group);
+        goods.append(heading,shelf);
+      }
+      row=document.createElement('div');row.className='good';
+      const name=document.createElement('span');name.textContent=item.name;
+      const picture=itemPicture(item);
+      if(['neck','hat'].includes(item.slot) && item.price)picture.classList.add('sway');
+      row.append(picture,name,document.createElement('button'));
+      shelf.append(row);shopCards.set(item.id,row);
+    }else if(item.id==='bare'||item.id==='none'){
+      row.firstChild.replaceWith(itemPicture(item));
     }
-    const row=document.createElement('div'), name=document.createElement('span'), button=document.createElement('button');
-    row.className='good';name.textContent=item.name;
+    const button=row.lastChild;
     const owned=!item.price||profile.owned.includes(item.id), selected=profile[item.slot]===item.id;
     button.textContent=selected?'Выбрано':owned?(item.slot==='place'?'Выбрать маршрут':item.slot==='neck'&&item.id!=='bare'?'Надеть':'Выбрать'):item.price+' 🐟';
     button.disabled=selected||(!owned&&profile.balance<item.price);
@@ -133,7 +134,7 @@ function refreshMenu(){
       }
       p[item.slot]=item.id;
     });
-    row.append(itemPicture(item),name,button);goods.append(row);
+
   }
 }
 window.addEventListener('storage',e=>{if(e.key===saveKey){readProfile();refreshMenu();}});
