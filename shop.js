@@ -14,9 +14,10 @@ const catalog = [
   {group:'Аксессуары', slot:'hat', id:'none', name:'Без шапки', price:0},
   {group:'Аксессуары', slot:'hat', id:'panama', name:'Жёлтая панама', price:80},
   {group:'Аксессуары', slot:'hat', id:'cap', name:'Новогодний колпачок', price:70},
+  {group:'Аксессуары', slot:'hat', id:'beret', name:'Вишнёвый берет', price:70},
+  {group:'Аксессуары', slot:'hat', id:'captain', name:'Капитанская фуражка', price:85},
   {group:'Маршрут', slot:'place', id:'market', name:'Утренний рынок', price:0},
   {group:'Маршрут', slot:'place', id:'pier', name:'Вечерняя набережная', price:120},
-  {group:'Маршрут', slot:'place', id:'yard', name:'Двор после дождя', price:160},
   {group:'Маршрут', slot:'place', id:'park', name:'Осенний парк', price:200},
   {group:'Маршрут', slot:'place', id:'square', name:'Новогодняя площадь', price:240},
 ];
@@ -27,8 +28,7 @@ function readProfile(){
     const stored = JSON.parse(localStorage.getItem(saveKey));
     if(stored && Number.isSafeInteger(stored.balance) && stored.balance>=0 && Array.isArray(stored.owned)){
       Object.assign(profile,stored);
-      if(profile.place==='roofs')profile.place='yard';
-      profile.owned=profile.owned.map(id=>id==='roofs'?'yard':id);
+      if(profile.place==='roofs'||profile.place==='yard')profile.place='market';
     }
   } catch {}
 }
@@ -68,7 +68,7 @@ function itemPicture(item){
     shape([[69,23],[88,28],[79,32],[84,38],[64,28]],'#ae363d');
     fill(28,20,15,2,'#f39372');
   } else if(item.slot==='neck'||item.slot==='hat'){
-    brush.translate(48,32);brush.scale(1.9,1.9);drawWear(brush,item.id);
+    brush.translate(48,item.slot==='hat'?43:32);brush.scale(1.9,1.9);drawWear(brush,item.id);
   } else if(routes[item.id]){
     const route=routes[item.id];fill(0,0,100,58,route.sky);fill(0,38,100,20,route.ground);
     brush.translate(32,48);brush.scale(.44,.44);drawRouteObject(brush,item.id,'side');brush.translate(90,10);drawRouteObject(brush,item.id,'crate');

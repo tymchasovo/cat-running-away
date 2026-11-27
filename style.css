@@ -49,7 +49,7 @@ html,body{overflow:hidden;overscroll-behavior:none}
 #shop:not([hidden]){display:flex;flex-direction:column}
 .shop-top{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #baaa87}
 #close-shop{margin:0;font-size:14px}
-#goods{display:block;overflow-y:auto;padding-inline-end:10px;scrollbar-gutter:stable;min-height:0;overscroll-behavior-y:contain}
+#goods{display:block;overflow-y:auto;margin-inline:-12px;padding-inline:12px;scrollbar-gutter:stable both-edges;scrollbar-width:thin;min-height:0;overscroll-behavior-y:contain}
 #goods h3{margin:16px 0 7px}
 .shelf{display:flex;gap:9px;overflow-x:auto;scroll-snap-type:x proximity;padding:2px 0 8px;overscroll-behavior-x:contain}
 .good{flex:0 0 41%;min-width:0;grid-template-rows:86px 1fr auto;scroll-snap-align:start}

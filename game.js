@@ -9,6 +9,7 @@ el('best').textContent = best;
 let mode = 'menu', distance = 0, fish = 0, lane = 0, x = 0, air = 0;
 let elapsed = 0, nextRow = 0, objects = [], last = 0, pointer = null;
 let W, H, slide = 0, diving = false;
+let jumpOrigin=0, jumpCount=0, slideCount=0;
 let pausedFrom = '', bonusLeft = 0, nextTrail = 0, nextGold = 0;
 let magnetLeft=0, nextRod=0;
 let mintLeft=0, nextMint=0, waiting=false;
@@ -80,7 +81,7 @@ function resize() {
 }
 function start() {
   mode = playedIntro || window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'run' : 'intro';
-  soundtrack.start(); slide=0; diving=false; el('fish').textContent=0;
+  soundtrack.start(); slide=0; diving=false;jumpCount=slideCount=jumpOrigin=0;petStarted=-Infinity; el('fish').textContent=0;
   playedIntro = true; introTime = 0; pointer = null;
   distance = fish = lane = x = air = elapsed = 0;
   lesson = firstAttempt() ? 'jump' : ''; objects = [];
@@ -99,18 +100,22 @@ function action(dir) {
   if (mode !== 'run') return;
   if(dir==='up'||dir==='down')spinLeft=0;
   if(dir==='up'){
-    if(!air){slide=0;air=.86;}
+    if(air && jumpCount>=2)return;
+    jumpOrigin=height();jumpCount=air?jumpCount+1:1;
+    slide=slideCount=0;diving=false;air=.86;
   }else if(dir==='down'){
     if(air){
-      // Mirror the rising arc onto its descending half at the same height.
-      air=Math.min(air,.86-air);diving=air>0;
-      if(!diving)slide=.8;
-    }else if(!slide)slide=.8;
+      if(!diving){
+        jumpOrigin=height();diving=true;air=.18;
+      }
+    }else if(!slide||slideCount<2){
+      slideCount=slide?slideCount+1:1;slide=.8;
+    }
   }
   else lane = Math.max(-1, Math.min(1, lane + dir));
 }
 el('start').onclick = start;
-el('open-shop').onclick=()=>{waiting=mode==='over';panel.hidden=true;el('shop').hidden=false;refreshMenu();};
+el('open-shop').onclick=()=>{petStarted=-Infinity;waiting=mode==='over';panel.hidden=true;el('shop').hidden=false;refreshMenu();};
 el('close-shop').onclick=()=>{notice.remove();el('shop').hidden=true;panel.hidden=false;};
 for(const key of ['music','effects']) el(key).onclick=()=>changeProfile(p=>{p[key]=!p[key];if(key==='music'&&!p.music)soundtrack.silence();soundtrack.unlock();});
 refreshMenu();
@@ -134,7 +139,11 @@ window.onkeydown = e => {
   const keys = {ArrowLeft:-1,ArrowRight:1,ArrowUp:'up',ArrowDown:'down',' ':'up'};
   if (mode==='run' && e.key in keys) {e.preventDefault(); if(!e.repeat) action(keys[e.key]);}
 };
-const height = () => Math.sin(Math.PI*air/.86);
+function height(){
+  if(!air)return 0;
+  if(diving)return jumpOrigin*air/.18;
+  return Math.sin(Math.PI*air/.86)+jumpOrigin*(air/.86);
+}
 const points = () => Math.floor(distance)+10*fish;
 function saveRecord(){
   best = Math.max(points(),best);
@@ -193,8 +202,8 @@ function tick(dt) {
   elapsed += advance/speed; distance += advance;
   x += Math.sign(lane-x)*Math.min(Math.abs(lane-x),dt*7);
   slide=Math.max(0,slide-dt);
-  air=Math.max(0,air-dt*(diving?4:1));
-  if(diving && !air){slide=.8;diving=false;}
+  air=Math.max(0,air-dt);
+  if(diving && !air){slide=.8;slideCount=1;diving=false;}
   while(nextRow < distance+90) {
     const blocked=Math.floor(Math.random()*3)-1;
     const open=(blocked+2)%3-1;
@@ -412,28 +421,33 @@ function cat(cx,cy,s,time){
   wear(-23,-41,beat);heldRod(palette,beat);
   ctx.restore();
 }
-let portraitTapAt=-Infinity, portraitTapSide=1;
+const petScenes={curl:2.4,walk:2.6,dash:2.1,play:2.7};
+let petScene='curl',petStarted=-Infinity;
+function petProgress(){return (performance.now()/1000-petStarted)/petScenes[petScene];}
 canvas.addEventListener('click',event=>{
-  if(mode!=='menu'||panel.hidden)return;
+  if(!(mode==='menu'||waiting)||panel.hidden||petProgress()<1)return;
   const bounds=canvas.getBoundingClientRect(),size=Math.min(W/175,H/270);
   const dx=event.clientX-bounds.left-W*.5,dy=event.clientY-bounds.top-H*.94;
-  if(Math.abs(dx)>26*size||dy< -60*size||dy>5*size)return;
-  portraitTapSide=dx<0?-1:1;portraitTapAt=performance.now();
+  if(Math.abs(dx)>27*size||dy< -64*size||dy>5*size)return;
+  const choices=Object.keys(petScenes).filter(scene=>petStarted===-Infinity||scene!==petScene);
+  petScene=choices[Math.floor(Math.random()*choices.length)];
+  petStarted=performance.now()/1000;
 });
 function sittingCat(time){
-  ctx.save();ctx.translate(W*.5,H*.94);
-  const size=Math.min(W/175,H/270);ctx.scale(size,size);
-  drawPortrait(ctx,profile.coat,time,true);
-  const phase=(performance.now()-portraitTapAt)/700;
-  const wash=time%5.5;
-  const reaching=phase<1,side=reaching?portraitTapSide:-1;
-  const lift=reaching?Math.sin(Math.PI*phase):wash<1.1?Math.sin(Math.PI*wash/1.1):0;
-  if(lift>0){
-    const px=side*(9+(reaching?18:4)*lift),py=-4-(reaching?19:27)*lift;
-    ctx.strokeStyle=(coats[profile.coat]||coats.ginger).O;ctx.lineCap='round';ctx.lineWidth=6;
-    ctx.beginPath();ctx.moveTo(side*9,-15);ctx.lineTo(px,py);ctx.stroke();
-    oval(px,py,4,4,(coats[profile.coat]||coats.ginger).tip);
+  const size=Math.min(W/175,H/270);
+  const t=petProgress(),active=t<1;
+  let offset=0,step=0,pose=0,facing=1;
+  if(active){
+    pose=Math.sin(Math.PI*Math.min(1,t*4)/2)*Math.sin(Math.PI*Math.min(1,(1-t)*4)/2);
+    if(petScene==='walk'||petScene==='dash'){
+      const trip=Math.sin(Math.PI*t)**2;
+      offset=trip*(petScene==='dash'?W*.5+size*32:-W*.29);
+      facing=Math.sign(offset||1)*(t<.5?1:-1);
+      step=Math.sin(t*Math.PI*(petScene==='dash'?20:12))*pose;
+    }
   }
+  ctx.save();ctx.translate(W*.5+offset,H*.94);ctx.scale(size,size);
+  drawPortrait(ctx,profile.coat,time,true,{scene:active?petScene:'',pose,step,facing});
   ctx.restore();
 }
 function drawFish(x,y){
@@ -653,7 +667,6 @@ function draw(time){
         drawPowerup(ctx,'gold',time*5);ctx.restore();
       }
       oval(0,0,22-height()*6,6,'#a07c62');cat(0,-height()*65,1.55,time);
-      if(profile.place==='yard' && !air)drawPawSplash(time);
     }
     if(['crate','table','lowTable'].includes(obj.type)){
       const y=obj.type==='crate'?-15:obj.type==='table'?-57:-43;

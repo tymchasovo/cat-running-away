@@ -1,6 +1,5 @@
 'use strict';
 const routes = {
-  yard:{sky:'#343d59',light:'#aaa0ad',ground:'#455865',tip:'Перепрыгивай ранцы, скользи под скамейками и обходи грузовые велосипеды.'},
   park:{sky:'#a7c9c0',light:'#ffe1a0',ground:'#cb9a63',line:'#bc8b56',tip:'Перепрыгивай поленницы, скользи под ветками и обходи деревья в кадках.'},
   square:{sky:'#243558',light:'#847eaa',ground:'#dde9ea',line:'#c6d9df',tip:'Перепрыгивай подарки, скользи под арками и обходи снеговиков.'}
 };
@@ -15,6 +14,17 @@ function drawWear(c,id,beat=0){
   const {box,disc,shape}=illustration(c);
   if(id==='panama'){
     shape([[-11,0],[-8,-11],[7,-12],[12,0]],'#e9ae37');box(-15,-2,31,5,'#ffc959');box(-10,-5,20,3,'#91602f');
+  }else if(id==='beret'){
+    shape([[-15,-4],[-16,-10],[-10,-15],[0,-17],[11,-14],[15,-10],[11,-5],[-2,-2]],'#993352');
+    shape([[-13,-6],[-3,-4],[12,-7],[10,-3],[-11,0]],'#652940');
+    box(-4,-19,3,4,'#742640');
+  }else if(id==='captain'){
+    shape([[-15,-11],[-11,-17],[0,-20],[12,-17],[16,-12],[12,-6],[-12,-6]],'#8e9ba7');
+    shape([[-14,-12],[-10,-16],[0,-18],[11,-16],[14,-12],[11,-8],[-11,-8]],'#fff6de');
+    box(-12,-8,24,5,'#314459');
+    shape([[-12,-4],[12,-4],[8,0],[1,1],[-9,-1]],'#273646');
+    box(-.8,-15,1.6,6,'#b78238');box(-3,-13,6,1.4,'#b78238');
+    shape([[-4,-11],[0,-9],[4,-11],[3,-8],[0,-7],[-3,-8]],'#b78238');
   }else if(id==='cap'){
     shape([[-14,0],[-5,-17],[5,-19],[15+beat*2,-10],[5,-12],[11,0]],'#c44043');
     disc(15+beat*2,-9,5.2,'#8496a3');box(-15,-3,29,7,'#8496a3');
@@ -29,14 +39,28 @@ function drawWear(c,id,beat=0){
     if(id==='winter'){for(const x of [-9,0,9])box(x,-2,4,5,'#da5247');box(16,3+beat*3,4,5,'#da5247');}
   }
 }
-function drawPortrait(c,coat,time,dressed=false){
+function drawPortrait(c,coat,time,dressed=false,motion={}){
   const p=coats[coat]||coats.ginger;
   const {shape}=illustration(c);
   function oval(x,y,w,h,color){
     c.fillStyle=color;c.beginPath();c.ellipse(x,y,w,h,0,0,Math.PI*2);c.fill();
   }
-  oval(0,0,25,4,'#ad937c');oval(0,-15,16,18,p.b);oval(0,-16,12,16,p.O);
-  oval(-8,-2,6,4,p.tip);oval(8,-2,6,4,p.tip);
+  const {scene='',pose=0,step=0,facing=1}=motion;
+  const curl=scene==='curl'?pose:0,play=scene==='play'?pose:0;
+  const stride=scene==='walk'||scene==='dash'?pose:0;
+  oval(0,0,25,4,'#ad937c');
+  c.save();
+  c.translate(-18*play,-3*play-Math.abs(step)*2);
+  c.rotate(play*1.83);
+  c.scale(1+curl*.22+stride*.08,1-curl*.36-stride*.15);
+  oval(0,-15,17,17,p.b);oval(0,-15,12,16,p.O);
+  for(const side of [-1,1]){
+    const kick=play*Math.sin(time*11+side*1.8);
+    oval(side*(8+play*4)+step*side*6,-2+kick*5-Math.max(0,step*side)*3,6,4,p.tip);
+  }
+  c.save();
+  c.translate(9*curl+8*stride*facing,9*curl+stride*2);
+  c.rotate(curl*.25+stride*facing*.12);
   for(const side of [-1,1]){
     const ear=coat==='calico'?(side<0?p.b:p.o):coat==='siamese'?p.o:p.O;
     shape([[side*19,-51],[side*17,-31],[side*4,-39]],ear);
@@ -47,17 +71,30 @@ function drawPortrait(c,coat,time,dressed=false){
   if(coat==='siamese')oval(0,-32,14,10,p.b);
   if(coat==='silver'||coat==='ginger')for(const x of [-6,0,6])shape([[x-2,-46],[x+2,-46],[x,-38]],p.b);
   for(const side of [-1,1]){
-    oval(side*8,-34,2.4,time%4.2>4?.55:3,'#252831');
+    oval(side*8,-34,2.4,curl>.7||time%4.2>4?.55:3,'#252831');
     oval(side*4,-28,5,3,coat==='siamese'?p.o:p.tip);
   }
   shape([[-3,-31],[3,-31],[0,-28]],p.p);
-  const tip=Math.sin(time*2);
-  c.lineCap='round';c.lineWidth=6;c.strokeStyle=p.b;c.beginPath();c.moveTo(14,-13);
-  c.bezierCurveTo(23,-3,19,4,-4,-2+tip);c.stroke();
-  oval(-4,-2+tip,4,3,p.tip);
-  if(dressed)for(const [item,y] of [[profile.neck,-21],[profile.hat,-44]]){
-    c.save();c.translate(0,y);drawWear(c,item);c.restore();
+  if(dressed){
+    c.save();c.translate(0,-44);drawWear(c,profile.hat);c.restore();
   }
+  c.restore();
+  if(dressed){
+    c.save();c.translate(curl*7+stride*facing*5,-21+curl*6);drawWear(c,profile.neck);c.restore();
+  }
+  const tip=Math.sin(time*2),tailX=-4-9*curl-12*stride*facing;
+  const tailY=-2+tip-19*curl-11*stride;
+  c.lineCap='round';c.lineWidth=6;c.strokeStyle=p.b;c.beginPath();c.moveTo(14,-13);
+  c.bezierCurveTo(23,-3,19,4+curl*4,tailX,tailY);c.stroke();
+  oval(tailX,tailY,4,3,p.tip);
+  if(play>0){
+    for(const side of [-1,1]){
+      const pawX=side*(9+6*play),pawY=-17+play*(10+5*Math.sin(time*12+side));
+      c.strokeStyle=p.O;c.beginPath();c.moveTo(side*8,-19);c.lineTo(pawX,pawY);c.stroke();
+      oval(pawX,pawY,4,4,p.tip);
+    }
+  }
+  c.restore();
 }
 function festiveLight(c,x,y,r,color,phase){
   const glow=Math.min(1,Math.max(0,.5+1.25*Math.sin(phase)));
@@ -82,24 +119,7 @@ function drawRouteObject(c,place,type,side=1,time=0){
     else {box(-5,-74,10,74,brown);disc(0,-78,29,'#ce7436');disc(-17,-62,22,'#de953e');disc(14,-63,20,'#ecb24c');
       if(type==='stall')box(-17,-19,34,19,'#885941');
       else {for(let i=0;i<4;i++)box(-33+i*19,-20,3,20,brown);box(-36,-15,65,3,brown);}}
-  }else if(place==='yard'){
-    if(type==='crate'){
-      box(-6,-29,12,7,'#263c4b');box(-3,-27,6,4,'#72818c');
-      shape([[-21,-1],[-19,-21],[-13,-25],[14,-25],[20,-19],[22,-1]],'#cd7758');
-      box(-19,-19,37,6,'#e59a70');box(-13,-11,25,9,'#b4614f');box(9,-17,3,6,'#f3d593');
-    }else if(type==='table'){
-      for(const x of [-33,28]){box(x,-78,5,78,'#374451');}
-      for(const y of [-77,-67,-54])box(-39,y,78,7,'#b88b71');
-    }else if(type==='stall'){
-      for(const x of [-25,26]){disc(x,-14,14,'#303744');disc(x,-14,10,'#96a4a2');disc(x,-14,4,'#3c4650');}
-      shape([[-25,-15],[-9,-41],[15,-17],[28,-45],[32,-43],[19,-11],[12,-11],[-8,-33],[-19,-14]],'#59aaa8');
-      box(25,-48,13,4,'#384555');box(-16,-44,16,5,'#384555');
-      shape([[-35,-51],[2,-51],[-2,-25],[-30,-25]],'#b68465');
-      box(-36,-53,40,5,'#e1b48a');box(-29,-42,28,2,'#d5a37b');
-    }else{
-      box(-4,-88,8,88,'#36434f');box(-12,-93,24,6,'#35404f');
-      shape([[-10,-87],[10,-87],[7,-73],[-7,-73]],'#ffe2a8');
-    }
+
   }
 }
 
