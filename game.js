@@ -117,7 +117,14 @@ function action(dir) {
 el('start').onclick = start;
 el('open-shop').onclick=()=>{petStarted=-Infinity;waiting=mode==='over';panel.hidden=true;el('shop').hidden=false;refreshMenu();};
 el('close-shop').onclick=()=>{notice.remove();el('shop').hidden=true;panel.hidden=false;};
-for(const key of ['music','effects']) el(key).onclick=()=>changeProfile(p=>{p[key]=!p[key];if(key==='music'&&!p.music)soundtrack.silence();soundtrack.unlock();});
+for(const button of document.querySelectorAll('[data-audio]')){
+  const key=button.dataset.audio;
+  button.onclick=()=>changeProfile(p=>{
+    p[key]=!p[key];
+    if(key==='music'&&!p.music)soundtrack.silence();
+    soundtrack.unlock();
+  });
+}
 refreshMenu();
 canvas.onpointerdown = e => {
   if (!e.isPrimary) return;
@@ -189,12 +196,12 @@ function tick(dt) {
     const sliding = lesson === 'slide';
     const cue = jumping ? firstCrate-3.6 : sliding ? firstTable-3 : firstStall-4;
     if (distance+advance >= cue) {
-      if (sliding ? slide >= .46 : lane !== 0 || (jumping && air >= .60)) {
+      if (sliding ? slide >= .46 : lane !== 0 || (jumping && air >= .60) || (!jumping && jumpCount===2 && air>=.60)) {
         lesson = jumping ? 'dodge' : sliding ? '' : 'slide';
         hint.hidden = true;
       } else {
         advance = Math.max(0, cue-distance);
-        hint.textContent = jumping ? '↑  Смахни вверх' : sliding ? '↓  Проскользни под прилавком' : '↔  Смахни в сторону';
+        hint.textContent = jumping ? '↑  Смахни вверх' : sliding ? '↓  Проскользни под прилавком' : '↔ Обойди или прыгни дважды ↑↑';
         hint.hidden = false;
       }
     }
@@ -264,6 +271,7 @@ function tick(dt) {
     }
     else {
       const cleared=(o.type==='crate' || o.type==='lowTable') && height()>=.35
+        || o.type==='stall' && jumpCount===2 && height()>=1.08
         || (o.type==='table' || o.type==='lowTable') && slide>0;
       if(!cleared){finish();break;}
     }
@@ -308,12 +316,66 @@ function ropeCoil(){
   oval(17,-14,8,10,'#ba502f');oval(16,-16,7,8,'#f18c43');
   rect(11,-17,11,3,'#fff1c5');
 }
+function strawberryTable(){
+  for(const x of [-33,28]){rect(x,-44,5,44,'#67463a');rect(x,-40,2,37,'#bf8956');}
+  rect(-39,-44,78,5,'#985b38');
+  for(const x of [-26,0,26]){
+    for(let j=0;j<4;j++){
+      const bx=x-8+j*5, by=-51-j%2*3;
+      poly([[bx-3,by],[bx,by+6],[bx+4,by]],j%2?'#cc4037':'#ec6650');
+      poly([[bx-4,by-1],[bx,by-3],[bx+4,by-1],[bx,by+1]],'#44815a');
+    }
+    rect(x-12,-48,24,5,'#dbaf71');
+  }
+}
+// Draw the tall silhouette behind the obstacle, leaving the slide opening clear.
+function drawOverhead(place){
+  if(place==='park'){
+    poly([[-37,-54],[-34,-94],[-40,-116],[-33,-113],[-27,-98],[-9,-112],[-4,-111],[-25,-89],[-29,-56]],'#634735');
+    poly([[-29,-64],[-5,-90],[21,-97],[33,-112],[36,-108],[27,-92],[0,-84]],'#785037');
+    for(const [x,y,r,color] of [[-24,-113,17,'#af532e'],[-6,-123,19,'#cf702a'],[17,-118,19,'#db892f'],[30,-103,13,'#c67930'],[-18,-95,19,'#cc772f'],[2,-101,18,'#e99a36']]){
+      oval(x,y,r,r*.85,color);
+    }
+  }else if(place==='square'){
+    poly([[-38,-64],[-34,-101],[-19,-110],[0,-135],[19,-110],[34,-101],[38,-64]],'#39695e');
+    poly([[-40,-99],[0,-139],[40,-99],[30,-102],[24,-99],[0,-124],[-25,-99]],'#f1f6ec');
+    for(let row=0;row<2;row++)for(let i=-2;i<=2;i++){
+      const y=-76-row*14-Math.abs(i)*2;
+      oval(i*13,y,4,4,['#f5c85d','#d36559','#e9e7bd'][(i+2+row)%3]);
+    }
+  }else if(place==='pier'){
+    // The upper boat and lower hull share a two-tier storage rack.
+    for(const x of [-30,26])rect(x,-125,5,70,'#795e49');
+    rect(-37,-106,74,5,'#a7805c');
+    poly([[-45,-125],[-24,-121],[24,-121],[45,-128],[37,-113],[23,-106],[-26,-106],[-39,-114]],'#914d39');
+    poly([[-45,-125],[-21,-123],[23,-123],[45,-128],[38,-119],[23,-115],[-24,-115],[-39,-119]],'#e2a65d');
+    for(let j=-24;j<26;j+=8){
+      poly([[j,-106],[j+2,-106],[j+12,-78],[j+10,-78]],'#ae9471');
+      poly([[j+10,-106],[j+12,-106],[j+2,-78],[j,-78]],'#ae9471');
+    }
+  }else{
+    rect(-35,-111,5,49,'#916444');rect(30,-111,5,49,'#916444');
+    rect(-32,-110,64,34,'#975f41');
+    for(let i=0;i<8;i++){
+      const x=-40+i*10,color=i%2?'#ffe4ac':'#b94f40';
+      poly([[x*.78,-130],[(x+10)*.78,-130],[x+10,-109],[x,-109]],color);
+      rect(x,-110,10,6,color);
+    }
+    // A painted citrus sign hangs beneath the striped canopy.
+    oval(0,-91,10,8,'#f5bb4c');
+    poly([[0,-98],[4,-104],[11,-103],[7,-98]],'#7aa36b');
+  }
+}
 function kayakRack(){
-  rect(-35,-52,7,52,'#574d50');rect(28,-52,7,52,'#574d50');
-  rect(-39,-53,78,6,'#ba8d67');
-  poly([[-46,-69],[-32,-66],[-18,-69],[19,-69],[33,-66],[46,-72],[38,-57],[23,-53],[-22,-53],[-37,-57]],'#315966');
-  poly([[-45,-69],[-22,-66],[19,-67],[46,-72],[38,-61],[20,-58],[-24,-58],[-38,-61]],'#f49a5b');
-  oval(0,-66,13,3,'#343f4a');rect(-28,-63,3,8,'#624d43');rect(25,-64,3,8,'#624d43');
+  for(const x of [-29,29]){
+    poly([[x-3,-55],[x+3,-55],[x+8,0],[x+3,0]],'#775841');
+    poly([[x-4,-54],[x+1,-54],[x-3,0],[x-9,0]],'#bb8d60');
+  }
+  rect(-39,-55,78,5,'#735742');
+  poly([[-46,-57],[-33,-68],[-8,-75],[17,-74],[40,-66],[48,-58],[30,-54],[-30,-54]],'#275866');
+  poly([[-44,-58],[-29,-67],[-4,-71],[19,-70],[40,-64],[47,-58],[22,-59],[-19,-58]],'#51908d');
+  poly([[-39,-63],[-8,-76],[15,-76],[39,-66],[13,-72],[-9,-72]],'#c1885e');
+  rect(-19,-63,13,1.5,'#f1c89c');rect(13,-62,7,1,'#a2c3ad');
 }
 function crabPots(){
   for(const x of [-26,26]){
@@ -422,8 +484,8 @@ function cat(cx,cy,s,time){
   wear(-23,fittedHat?-33:-41,beat,facing<0?'front':'back');heldRod(palette,beat);
   ctx.restore();
 }
-const petScenes={curl:2.4,walk:2.6,dash:2.1,play:2.7,wash:2.6};
-let petScene='curl',petStarted=-Infinity;
+const petScenes={walk:2.6,dash:2.1,play:2.7,wash:2.6};
+let petScene='walk',petStarted=-Infinity;
 function petProgress(){return (performance.now()/1000-petStarted)/petScenes[petScene];}
 canvas.addEventListener('click',event=>{
   if(!(mode==='menu'||waiting)||panel.hidden||petProgress()<1)return;
@@ -492,7 +554,7 @@ function marketBay(z,side,index){
   // Each bay shares its end wall and paving level with the next shop.
   const front=project(z,side*2.05), back=project(z+10,side*2.05);
   const bays=['#d79e78','#ebbe91','#dba882','#f0caa2'];
-  const awnings=['#63978a','#bd715b','#7b9982','#c68556'];
+  const awnings=['#328378','#c95947','#497e92','#dc9241'];
   const i=((index%4)+4)%4;
   const height=[126,140,129,135][i];
   const ridge=project(z,side*3.1),ridgeEnd=project(z+10,side*3.1);
@@ -531,6 +593,11 @@ function marketBay(z,side,index){
   const lip=project(z,side*1.77), end=project(z+10,side*1.77);
   poly([[front.x,front.y-64*front.s],[back.x,back.y-64*back.s],
         [end.x,end.y-52*end.s],[lip.x,lip.y-52*lip.s]],awnings[i]);
+  for(let j=1;j<6;j+=2){
+    const near=z+10*j/6,far=near+10/6;
+    const corners=[[near,2.05,64],[far,2.05,64],[far,1.77,52],[near,1.77,52]];
+    poly(corners.map(([depth,l,h])=>{const p=project(depth,l*side);return [p.x,p.y-h*p.s];}),'#ffdf9e');
+  }
   for(let j=0;j<5;j++){
     const a=j/5,b=(j+1)/5;
     const edge=t=>[lip.x+(end.x-lip.x)*t,lip.y+(end.y-lip.y)*t-52*(lip.s+(end.s-lip.s)*t)];
@@ -538,6 +605,25 @@ function marketBay(z,side,index){
     ctx.fillStyle=j%2?'#f6d6a6':awnings[i];ctx.beginPath();ctx.moveTo(ax,ay-1);ctx.lineTo(bx,by-1);
     ctx.quadraticCurveTo((ax+bx)/2,(ay+by)/2+12*lip.s,ax,ay);ctx.fill();
   }
+}
+function marketDisplay(z,side,index){
+  const p=passingPoint(z,side*1.60);
+  ctx.save();ctx.translate(p.x,p.y);ctx.scale(p.s,p.s);
+  poly([[-23,0],[17,0],[-1,9],[-47,9]],'#c59a72');
+  if(index%2===0){
+    poly([[-18,-16],[18,-16],[15,0],[-14,0]],'#a26940');
+    for(let row=0;row<2;row++)for(let col=0;col<5-row;col++)
+      oval(-13+col*6+row*3,-17-row*5,4.3,3.7,index%4?'#f1a135':'#ffdc54');
+    for(const y of [-12,-7])rect(-16,y,32,2,'#e1a966');
+  }else{
+    for(const [x,y] of [[-12,-35],[-6,-42],[1,-36],[7,-45],[13,-32]]){
+      poly([[0,-12],[x-1,y],[x+1,y],[3,-12]],'#497451');
+      for(const [dx,dy] of [[-3,0],[3,0],[0,-3],[0,3]])oval(x+dx,y+dy,3,3,index%4===1?'#c54d55':'#f3bf58');
+      oval(x,y,2.5,2.5,'#ffe4a3');
+    }
+    poly([[-10,-19],[11,-19],[7,0],[-6,0]],'#528d89');rect(-11,-19,23,3,'#87b8a7');
+  }
+  ctx.restore();
 }
 function marketStreet(){
   const horizon=H*.27, gate=project(140,0);
@@ -578,7 +664,10 @@ function marketStreet(){
   }
   for(let z=140-distance%10;z>-9;z-=10){
     const index=Math.round((z+distance)/10);
-    for(const side of [-1,1])marketBay(z,side,index+(side>0?2:0));
+    for(const side of [-1,1]){
+      marketBay(z,side,index+(side>0?2:0));
+      marketDisplay(z+3,side,index+(side>0?1:0));
+    }
   }
   // Suspended bunting links opposite shopfronts across the lane.
   for(let z=130-distance%35;z>-14;z-=35){
@@ -621,9 +710,12 @@ function draw(time){
   for(const obj of items){
     const p=passingPoint(obj.z,obj.l);
     ctx.save();ctx.translate(p.x,p.y);ctx.scale(p.s,p.s);
+    if(obj.type==='table')drawOverhead(profile.place);
     if(obj.type==='lowTable'){
       if(route){
         ctx.save();ctx.scale(1,.75);drawRouteObject(ctx,profile.place,'table',obj.l);ctx.restore();
+      }else if(profile.place==='market'){
+        strawberryTable();
       }else{
         rect(-35,-43,6,43,'#775841');rect(29,-43,6,43,'#775841');
         rect(-39,-50,78,9,dusk?'#779a9b':'#ce9761');
@@ -652,6 +744,11 @@ function draw(time){
 
     } else if(obj.type==='side'||obj.type==='stall')booth(obj.l<0?'#c45b48':'#3b8983');
     else if(obj.type==='crate'){
+      for(let i=0;i<7;i++){
+        const lx=-21+i*7,ly=-23-i%3*2;
+        oval(lx,ly,5,4,i%2?'#eab636':'#ffdc55');
+        poly([[lx,ly-3],[lx+2,ly-7],[lx+6,ly-7],[lx+3,ly-4]],'#547b49');
+      }
       rect(-27,-23,54,23,'#805039');rect(-24,-21,48,8,'#ce8b4f');rect(-24,-10,48,7,'#dc9b59');
       rect(-21,-23,5,23,'#a06640');rect(16,-23,5,23,'#a06640');
     } else if(obj.type in durations){

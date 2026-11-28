@@ -61,12 +61,6 @@ function itemPicture(item){
   if(item.slot==='coat'||item.id==='bare'||item.id==='none'){
     brush.translate(50,57);brush.scale(.96,.96);
     drawPortrait(brush,item.slot==='coat'?item.id:profile.coat,0);
-  } else if(item.id==='scarf'){
-    shape([[17,16],[76,15],[62,30],[42,48]],'#98333a');
-    shape([[17,16],[64,21],[43,42]],'#db5247');
-    shape([[58,20],[72,12],[78,18],[68,27]],'#c13f44');
-    shape([[69,23],[88,28],[79,32],[84,38],[64,28]],'#ae363d');
-    fill(28,20,15,2,'#f39372');
   } else if(item.slot==='neck'||item.slot==='hat'){
     brush.translate(48,item.slot==='hat'?43:32);brush.scale(1.9,1.9);drawWear(brush,item.id);
   } else if(routes[item.id]){
@@ -100,15 +94,15 @@ const shopCards=new Map();
 function refreshMenu(){
   document.getElementById('balance').textContent=profile.balance;
   if(mode==='menu'||mode==='over') document.getElementById('fish').textContent=profile.balance;
-  for(const key of ['music','effects']){
-    const button=document.getElementById(key);
+  for(const button of document.querySelectorAll('[data-audio]')){
+    const key=button.dataset.audio;
     button.textContent=(key==='music'?'Музыка':'Эффекты')+(profile[key]?' · вкл':' · выкл');
     button.setAttribute('aria-pressed',String(profile[key]));
   }
   if(mode==='menu'){
     document.getElementById('detail').textContent=routes[profile.place]?.tip || (profile.place==='pier'
-      ? 'Перепрыгивай канаты, скользи под каяками и обходи ловушки.'
-      : 'Прыгай через ящики, скользи под высокими прилавками и собирай рыбок.');
+      ? 'Перепрыгивай канаты, скользи под лодками. Краболовки можно обойти или перепрыгнуть двойным прыжком.'
+      : 'Собирай рыбок между прилавками. Высокий киоск можно обойти или перепрыгнуть двойным прыжком.');
   }
   const goods=document.getElementById('goods');
   if(document.getElementById('shop').hidden) return;

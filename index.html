@@ -12,12 +12,12 @@
     <p id="detail">Прыгай через ящики, скользи под высокими прилавками и собирай рыбок.</p>
     <button id="start"><span class="button-face"><span id="start-label">Играть</span> <strong aria-hidden="true">→</strong></span></button>
     <button id="open-shop" class="secondary">Лавка</button>
-    <div class="audio"><button id="music"></button><button id="effects"></button></div>
+    <div class="audio"><button data-audio="music"></button><button data-audio="effects"></button></div>
   </section>
   <section id="shop" hidden><div class="shop-top"><canvas id="shop-cat" width="90" height="82" aria-label="Твой кот"></canvas><div><h2>Лавка</h2><p>В кошельке 🐟 <b id="balance">0</b></p></div><button id="close-shop" class="secondary">Меню</button></div>
     <div id="goods"></div>
   </section>
   <div id="bonus" hidden></div>
-  <section id="break" hidden><h2 id="pause-title">Пауза</h2><button id="resume">Продолжить</button> <button class="secondary" id="pause-menu">Меню</button></section>
+  <section id="break" hidden><h2 id="pause-title">Пауза</h2><button id="resume">Продолжить</button> <button class="secondary" id="pause-menu">Меню</button><div class="audio"><button data-audio="music"></button><button data-audio="effects"></button></div></section>
   <div id="hint" hidden></div>
 </main><script src="art.js"></script><script src="shop.js"></script><script src="sound.js"></script><script src="scenery.js"></script><script src="game.js"></script></body></html>

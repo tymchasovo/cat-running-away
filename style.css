@@ -19,7 +19,9 @@ main>canvas{touch-action:none}
 #close-shop{margin-top:14px}
 
 header{align-items:center;gap:4px}#pause{pointer-events:auto;font-size:18px;line-height:1.1;min-width:44px;min-height:44px;padding:6px;color:#fff1cb;background:#345e57}
-#break{top:37%;transform:translateX(-50%);max-width:250px}#pause-title{margin:3px 0 16px;font:900 35px Georgia,serif}#pause-title:only-child{margin:0}
+#break{top:50%;transform:translate(-50%,-50%);max-width:280px}#break .audio{margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}#break .audio button{min-width:0;padding:7px 2px;white-space:nowrap}
+@media(max-width:340px){#break{width:94%;padding-inline:12px}}
+#pause-title{margin:3px 0 16px;font:900 35px Georgia,serif}#pause-title:only-child{margin:0}
 #bonus{position:absolute;top:calc(max(12px,env(safe-area-inset-top)) + 53px);left:15px;pointer-events:none}
 .power-meter{display:flex;align-items:center;gap:4px;margin-bottom:3px}
 .power-meter canvas{width:28px;height:28px}
